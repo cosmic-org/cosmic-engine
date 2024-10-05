@@ -3537,6 +3537,7 @@ __metadata:
     next-themes: ^0.2.1
     nprogress: ^0.2.0
     pg: ^8.12.0
+    phaser: ^3.54.0
     postcss: ^8.4.16
     prettier: ^2.8.4
     qrcode.react: ^3.1.0
@@ -3553,6 +3554,7 @@ __metadata:
     unique-names-generator: ^4.7.1
     use-debounce: ^8.0.4
     usehooks-ts: ^2.13.0
+    uuid: ^8.3.2
     vercel: ^32.4.1
     viem: 2.17.4
     wagmi: 2.10.10
@@ -15499,6 +15501,15 @@ __metadata:
   dependencies:
     split2: ^4.1.0
   checksum: 947ac096c031eebdf08d989de2e9f6f156b8133d6858c7c2c06c041e1e71dda6f5f3bad3c0ec1e96a09497bbc6ef89e762eefe703b5ef9cb2804392ec52ec400
+  languageName: node
+  linkType: hard
+
+"phaser@npm:^3.54.0":
+  version: 3.85.2
+  resolution: "phaser@npm:3.85.2"
+  dependencies:
+    eventemitter3: ^5.0.1
+  checksum: 4d1ca17ad6951c8b8e65c07701c35d088af748fec4aaf024bc332a90507b88abf0f266d673db7793535c322404e87b6d63ecfda6a940d83d7e8eaf29d9a1e2d7
   languageName: node
   linkType: hard
 
