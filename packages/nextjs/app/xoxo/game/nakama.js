@@ -30,7 +30,7 @@ class Nakama {
     }
 
     async findMatch(ai=false) { // ep4
-        const rpcid = "find_match";
+        const rpcid = "find_match_js";
         const matches = await this.client.rpc(this.session, rpcid, {ai: ai});
 
         this.matchID = matches.payload.matchIds[0]

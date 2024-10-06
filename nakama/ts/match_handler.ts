@@ -211,7 +211,7 @@ let matchLeave: nkruntime.MatchLeaveFunction<State> = function(ctx: nkruntime.Co
 }
 
 let matchLoop: nkruntime.MatchLoopFunction<State> = function(ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkruntime.Nakama, dispatcher: nkruntime.MatchDispatcher, tick: number, state: State, messages: nkruntime.MatchMessage[]) {
-    logger.debug('Running match loop. Tick: %d', tick);
+    // logger.debug('Running match loop. Tick: %d', tick);
 
     if (connectedPlayers(state) + state.joinsInProgress === 0) {
         state.emptyTicks++;
@@ -360,7 +360,34 @@ let matchLoop: nkruntime.MatchLoopFunction<State> = function(ctx: nkruntime.Cont
                         nextGameStart: t + Math.floor(state.nextGameRemainingTicks/tickRate),
                     }
                     outgoingMsg = msg;
+
+                    let walletUpdates : nkruntime.WalletUpdate[] = [];
+
+                    // award players with points
+                    for (let userId in state.marks) {
+                        if (userId === 'ai-user-id') {
+                            continue;
+                        }
+
+                        if (state.marks[userId] === state.winner) {
+                            walletUpdates.push({
+                                userId: userId,
+                                changeset: { wins: 1, plays: 1},
+                                metadata: {gameid: ctx.matchId}
+                            })
+                        } else {
+                            walletUpdates.push({
+                                userId: userId,
+                                changeset: { plays: 1},
+                                metadata: {gameid: ctx.matchId}
+                            })
+                        }
+                    }
+
+                    nk.walletsUpdate(walletUpdates, true);                                              
+
                 }
+                
                 dispatcher.broadcastMessage(opCode, JSON.stringify(outgoingMsg));
                 break;
             case OpCode.INVITE_AI:

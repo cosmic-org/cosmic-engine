@@ -418,8 +418,8 @@ var matchLeave = function (ctx, logger, nk, dispatcher, tick, state, presences) 
     return { state: state };
 };
 var matchLoop = function (ctx, logger, nk, dispatcher, tick, state, messages) {
+    // logger.debug('Running match loop. Tick: %d', tick);
     var _a;
-    logger.debug('Running match loop. Tick: %d', tick);
     if (connectedPlayers(state) + state.joinsInProgress === 0) {
         state.emptyTicks++;
         if (state.emptyTicks >= maxEmptySec * tickRate) {
@@ -557,6 +557,28 @@ var matchLoop = function (ctx, logger, nk, dispatcher, tick, state, messages) {
                         nextGameStart: t + Math.floor(state.nextGameRemainingTicks / tickRate),
                     };
                     outgoingMsg = msg_2;
+                    var walletUpdates = [];
+                    // award players with points
+                    for (var userId in state.marks) {
+                        if (userId === 'ai-user-id') {
+                            continue;
+                        }
+                        if (state.marks[userId] === state.winner) {
+                            walletUpdates.push({
+                                userId: userId,
+                                changeset: { wins: 1, plays: 1 },
+                                metadata: { gameid: ctx.matchId }
+                            });
+                        }
+                        else {
+                            walletUpdates.push({
+                                userId: userId,
+                                changeset: { plays: 1 },
+                                metadata: { gameid: ctx.matchId }
+                            });
+                        }
+                    }
+                    nk.walletsUpdate(walletUpdates, true);
                 }
                 dispatcher.broadcastMessage(opCode, JSON.stringify(outgoingMsg));
                 break;
