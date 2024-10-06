@@ -21,11 +21,15 @@ cd cosmic-engine
 yarn install
 ```
 
-2. Run docker containers:
+2. Set up nakama containers and modules:
 
 ```
-yarn docker:up
+cd nakama
+npm install
+npm run build
+docker-compose up -d
 ```
+
 3. Start your NextJS app:
 
 ```
@@ -33,3 +37,5 @@ yarn start
 ```
 
 Visit your app on: `http://localhost:3000`
+
+Manage the nakama instance on `http://localhost:7351`
