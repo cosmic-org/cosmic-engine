@@ -17,7 +17,7 @@ export const DatabaseProfileCard = () => {
 
   return (
     <>
-      <p className="my-2 font-medium">Database Profile Card</p>
+      <p className="my-2 font-medium">Player Profile</p>
       <ConnectButton.Custom>
         {({ account, chain, openConnectModal, mounted }) => {
           const connected = mounted && account && chain;
@@ -44,7 +44,7 @@ export const DatabaseProfileCard = () => {
                       </span>
 
                       <button
-                        className="btn btn-primary btn-sm"
+                        className="btn btn-primary btn-sm my-2"
                         onClick={() => saveToDB(account.address)}
                         type="button"
                       >
