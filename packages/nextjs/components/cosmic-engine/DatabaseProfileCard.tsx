@@ -1,9 +1,10 @@
 "use client";
 
+import { useGlobalContext } from "@/contexts/GlobalContext";
 import { Client } from "@heroiclabs/nakama-js";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 
-export const DatabaseProfileCard = async () => {
+export const DatabaseProfileCard = () => {
   const saveToDB = async (account: string) => {
     const client = new Client("defaultkey", "127.0.0.1", "7350");
 
@@ -11,6 +12,8 @@ export const DatabaseProfileCard = async () => {
     const session = await client.authenticateDevice(account, true);
     console.info("Successfully authenticated:", session);
   };
+
+  const { burner } = useGlobalContext(); //, balance, setBalance, cluster, connection, loading } =
 
   return (
     <>
@@ -33,7 +36,13 @@ export const DatabaseProfileCard = async () => {
                 return (
                   <>
                     <div className="flex flex-col items-center mr-1">
-                      <span className="text-xs">{chain.name}</span>
+                      <span className="text-xs">
+                        Solana: {burner?.publicKey.toString().replace(/^(.{4}).*(.{4})$/, "$1...$2")}
+                      </span>
+                      <span className="text-xs">
+                        Ethereum: {account.address.replace(/^(.{4}).*(.{4})$/, "$1...$2")}
+                      </span>
+
                       <button
                         className="btn btn-primary btn-sm"
                         onClick={() => saveToDB(account.address)}

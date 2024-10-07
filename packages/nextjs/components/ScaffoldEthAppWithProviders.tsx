@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { GlobalContextProvider } from "@/contexts/GlobalContext";
 import { RainbowKitProvider, darkTheme, lightTheme } from "@rainbow-me/rainbowkit";
 import { RainbowKitSiweNextAuthProvider } from "@rainbow-me/rainbowkit-siwe-next-auth";
 import { WalletAdapterNetwork } from "@solana/wallet-adapter-base";
@@ -76,17 +77,19 @@ export const ScaffoldEthAppWithProviders = ({ children }: { children: React.Reac
         <ConnectionProvider endpoint={endpoint}>
           <WalletProvider wallets={wallets} autoConnect>
             <WalletModalProvider>
-              <RainbowKitSiweNextAuthProvider>
-                <QueryClientProvider client={queryClient}>
-                  <ProgressBar />
-                  <RainbowKitProvider
-                    avatar={BlockieAvatar}
-                    theme={mounted ? (isDarkMode ? darkTheme() : lightTheme()) : lightTheme()}
-                  >
-                    <ScaffoldEthApp>{children}</ScaffoldEthApp>
-                  </RainbowKitProvider>
-                </QueryClientProvider>
-              </RainbowKitSiweNextAuthProvider>
+              <GlobalContextProvider>
+                <RainbowKitSiweNextAuthProvider>
+                  <QueryClientProvider client={queryClient}>
+                    <ProgressBar />
+                    <RainbowKitProvider
+                      avatar={BlockieAvatar}
+                      theme={mounted ? (isDarkMode ? darkTheme() : lightTheme()) : lightTheme()}
+                    >
+                      <ScaffoldEthApp>{children}</ScaffoldEthApp>
+                    </RainbowKitProvider>
+                  </QueryClientProvider>
+                </RainbowKitSiweNextAuthProvider>
+              </GlobalContextProvider>
             </WalletModalProvider>
           </WalletProvider>
         </ConnectionProvider>
