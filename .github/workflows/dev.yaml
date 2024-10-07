@@ -1,0 +1,15 @@
+name: Build and deploy to Dev
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy-app:
+    uses: cosmic-org/workflow-library/.github/workflows/deploy.yml@main
+    with:
+      repository_url: https://github.com/cosmic-org/cosmic-engine.git
+      docker_params: "-p 3001:3000 -d --restart always -v /opt/moons/ppdb/bin/config/.env:/app/config/.env -v /opt/moons/ppdb/bin/resource:/app/resource"
+    secrets: inherit
