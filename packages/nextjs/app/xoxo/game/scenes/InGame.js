@@ -1,3 +1,4 @@
+import { notification } from "~~/utils/scaffold-eth";
 import Nakama from "../nakama"
 import { Scene } from 'phaser';
 
@@ -63,11 +64,19 @@ export default class InGame extends Scene {
 
         if (data.winner === this.playerPos) {
             this.headerText.setText("Winner!")
+            notification.success("You won the game")
         } else if(data.winner === undefined) {
             this.headerText.setText("Tie!")
+            notification.info("The game ended in a tie")
         } else {
-            this.headerText.setText("You loose :(")
+            this.headerText.setText("You lose :(")
+            notification.error("You lost the game")
         }
+
+        // go to the main menu after 3 seconds
+        setTimeout(() => {
+            window.location.href = "/"
+        }, 3000)
     }
 
     //ep4
