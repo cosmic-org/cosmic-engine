@@ -7,11 +7,11 @@ import { AUTO, Game } from "phaser";
 //  https://newdocs.phaser.io/docs/3.70.0/Phaser.Types.Core.GameConfig
 const config: Phaser.Types.Core.GameConfig = {
   type: AUTO,
-  width: 414, // 1024,
-  height: 736, // 768,
-  mode: Phaser.Scale.RESIZE,
+  width: 400, // 1024,
+  height: 550, // 768,
+  mode: Phaser.Scale.HEIGHT_CONTROLS_WIDTH,
   parent: "game-container",
-  backgroundColor: "#028af8",
+  backgroundColor: "#000000",
   scene: [MainMenu, InGame, Matchmaking],
 };
 

@@ -3,9 +3,11 @@ import Nakama from "../nakama"
 import { Scene } from 'phaser';
 
 const CONFIG = {
-    WIDTH: 414,
-    HEIGHT: 736
+    WIDTH: 400,
+    HEIGHT: 550
 }
+
+
 
 export default class InGame extends Scene {
     constructor() {
@@ -16,6 +18,7 @@ export default class InGame extends Scene {
         this.turn = false;
         this.phaser = this
         this.playerPos;
+        this.emitter;
     }
 
     //ep4
@@ -64,14 +67,18 @@ export default class InGame extends Scene {
 
         if (data.winner === this.playerPos) {
             this.headerText.setText("Winner!")
+            this.headerText.setColor("#00ff00")
             notification.success("You won the game")
-        } else if(data.winner === undefined) {
+        } else if(data.winner === undefined || data.winner === 0) {
             this.headerText.setText("Tie!")
             notification.info("The game ended in a tie")
         } else {
+            this.headerText.setColor("#ff0000")
             this.headerText.setText("You lose :(")
             notification.error("You lost the game")
         }
+
+        this.emitter.explode(48);
 
         // go to the main menu after 3 seconds
         setTimeout(() => {
@@ -107,13 +114,15 @@ export default class InGame extends Scene {
     preload() {
         this.load.image("X", "assets/X.png");
         this.load.image("O", "assets/O.png");
+        this.load.atlas('flares', 'assets/flares.png', 'assets/flares.json');
+
     }
 
     create() {
         this.headerText = this.add
-            .text(CONFIG.WIDTH / 2, 125, "Waiting for game to start", {
+            .text(CONFIG.WIDTH / 2, 80, "Waiting for game to start", {
                 fontFamily: "Arial",
-                fontSize: "36px",
+                fontSize: "24px",
             })
             .setOrigin(0.5);
 
@@ -130,7 +139,7 @@ export default class InGame extends Scene {
             0xffffff,
             0,
             0xffca27
-        );
+        ); 
 
         const gridCenterX = grid.getCenter().x;
         const gridCenterY = grid.getCenter().y;
@@ -278,5 +287,14 @@ export default class InGame extends Scene {
             this.playAIBtn.setScale(1);
             this.playAIBtnText.setScale(1);
         });
+
+        this.emitter = this.add.particles(CONFIG.WIDTH / 2, CONFIG.HEIGHT / 2, 'flares', {
+            frame: [ 'red', 'yellow', 'green' ],
+            lifespan: 4000,
+            speed: { min: 250, max: 400 },
+            scale: { start: 0.8, end: 0 },            
+            blendMode: 'ADD',
+            emitting: false
+        });                   
     }
 }

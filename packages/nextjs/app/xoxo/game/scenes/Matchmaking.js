@@ -1,8 +1,8 @@
 import { Scene } from 'phaser';
 
 const CONFIG = {
-    WIDTH: 414,
-    HEIGHT: 736
+    WIDTH: 400,
+    HEIGHT: 550
 }
 
 export default class Matchmaking extends Scene {
@@ -20,9 +20,9 @@ export default class Matchmaking extends Scene {
 
     create() {
         this.add
-            .text(CONFIG.WIDTH / 2, 125, "Searching for an opponent...", {
+            .text(CONFIG.WIDTH / 2, 80, "Searching for an opponent...", {
                 fontFamily: "Arial",
-                fontSize: "24px",
+                fontSize: "16px",
             })
             .setOrigin(0.5);
 

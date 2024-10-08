@@ -2,8 +2,8 @@ import Nakama from "../nakama"
 import { Scene } from 'phaser';
 
 const CONFIG = {
-    WIDTH: 414,
-    HEIGHT: 736
+    WIDTH: 400,
+    HEIGHT: 550
 }
 
 export default class MainMenu extends Scene {
@@ -15,16 +15,16 @@ export default class MainMenu extends Scene {
         Nakama.authenticate()
 
         this.add
-            .text(CONFIG.WIDTH / 2, 75, "Welcome to", {
+            .text(CONFIG.WIDTH / 2, 35, "Let's Play!", {
                 fontFamily: "Arial",
                 fontSize: "24px",
             })
             .setOrigin(0.5);
 
         this.add
-            .text(CONFIG.WIDTH / 2, 123, "XOXO", {
+            .text(CONFIG.WIDTH / 2, 83, "Tic-Tac-Monke", {
                 fontFamily: "Arial",
-                fontSize: "72px",
+                fontSize: "42px",
             })
             .setOrigin(0.5);
 
@@ -41,13 +41,13 @@ export default class MainMenu extends Scene {
         );
 
         const playBtn = this.add
-            .rectangle(CONFIG.WIDTH / 2, 600, 225, 70, 0xffca27)
+            .rectangle(CONFIG.WIDTH / 2, 460, 225, 40, 0xffca27)
             .setInteractive({ useHandCursor: true });
 
         const playBtnText = this.add
-            .text(CONFIG.WIDTH / 2, 600, "Find match", {
+            .text(CONFIG.WIDTH / 2, 460, "Find match", {
                 fontFamily: "Arial",
-                fontSize: "36px",
+                fontSize: "24px",
             })
             .setOrigin(0.5);
 
@@ -67,13 +67,13 @@ export default class MainMenu extends Scene {
         });
 
         const playAIBtn = this.add
-            .rectangle(CONFIG.WIDTH / 2, 680, 225, 70, 0xffca27)
+            .rectangle(CONFIG.WIDTH / 2, 515, 225, 40, 0xffca27)
             .setInteractive({ useHandCursor: true });
 
         const playAIBtnText = this.add
-            .text(CONFIG.WIDTH / 2, 680, "Play with AI", {
+            .text(CONFIG.WIDTH / 2, 515, "Play with AI", {
                 fontFamily: "Arial",
-                fontSize: "36px",
+                fontSize: "24px",
             })
             .setOrigin(0.5);
 
