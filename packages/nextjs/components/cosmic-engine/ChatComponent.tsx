@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Client, Session } from "@heroiclabs/nakama-js";
+import { Client, Session, Socket } from "@heroiclabs/nakama-js";
 import { v4 as uuidv4 } from "uuid";
 
 const ROOM_NAME = "global";
@@ -17,10 +17,16 @@ export const ChatComponent = () => {
   }
 
   const [messages, setMessages] = useState<Message[]>([]);
+  const [message, setMessage] = useState("");
+  const [socket, setSocket] = useState<Socket | null>(null);
+  const [chatId, setChatId] = useState<string | null>(null);
 
-  const authenticate = async () => {
-    const client = new Client("defaultkey", "127.0.0.1", "7350");
+  useEffect(() => {
+    const nakamaClient = new Client("defaultkey", "127.0.0.1", "7350");
+    authenticate(nakamaClient);
+  }, []);
 
+  const authenticate = async (client: Client) => {
     let deviceId = localStorage.getItem("deviceId");
     if (!deviceId) {
       deviceId = uuidv4();
@@ -34,9 +40,10 @@ export const ChatComponent = () => {
   };
 
   const sessionHandler = (client: Client, session: Session) => {
-    const socket = client.createSocket(false);
+    const newSocket = client.createSocket(false);
+    setSocket(newSocket);
 
-    socket.onchannelmessage = message => {
+    newSocket.onchannelmessage = message => {
       const newMessage = {
         message_id: message.message_id,
         username: message.username,
@@ -47,22 +54,31 @@ export const ChatComponent = () => {
       setMessages(prevMessages => [...prevMessages, newMessage]);
     };
 
-    socket.connect(session, true).then(() => {
+    newSocket.connect(session, true).then(() => {
       // join default room
-      socket.joinChat(ROOM_NAME, 1, true, false).then(chatInfo => {
+      newSocket.joinChat(ROOM_NAME, 1, true, false).then(chatInfo => {
+        setChatId(chatInfo.id); // Set chatId state
+
         const data = {
           data: session.username + " has joined the chat",
         };
 
         // send message
-        socket.writeChatMessage(chatInfo.id, data);
+        newSocket.writeChatMessage(chatInfo.id, data);
       });
     });
   };
 
-  useEffect(() => {
-    authenticate();
-  }, []);
+  const sendMessage = () => {
+    if (!socket || !chatId) return;
+
+    const data = {
+      data: message,
+    };
+
+    socket.writeChatMessage(chatId, data); // Use chatId state
+    setMessage("");
+  };
 
   return (
     <>
@@ -83,6 +99,24 @@ export const ChatComponent = () => {
           ))}
         </div>
       )}
+
+      <form className="flex items-center space-x-4">
+        <input
+          type="text"
+          placeholder="Message"
+          className="flex-1 p-2 border rounded"
+          value={message}
+          onChange={e => setMessage(e.target.value)}
+        />
+        <button
+          type="button"
+          className="px-4 py-2 bg-blue-500 text-white rounded disabled:opacity-50"
+          disabled={message.length < 1}
+          onClick={sendMessage}
+        >
+          Send
+        </button>
+      </form>
     </>
   );
 };
