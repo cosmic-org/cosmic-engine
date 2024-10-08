@@ -2,7 +2,9 @@
 import type { NextPage } from "next";
 // import { BugAntIcon } from "@heroicons/react/24/outline";
 import {
-  DatabaseProfileCard, // NextAuthLoginCard
+  // NextAuthLoginCard
+  ChatComponent,
+  DatabaseProfileCard,
 } from "~~/components/cosmic-engine";
 
 const Home: NextPage = () => {
@@ -42,6 +44,10 @@ const Home: NextPage = () => {
 
             <div className="flex flex-col bg-base-100 px-10 py-10 text-center items-center max-w-xs rounded-3xl">
               <DatabaseProfileCard />
+            </div>
+
+            <div className="flex flex-col bg-base-100 px-10 py-10 text-center items-center max-w-lg w-full rounded-3xl">
+              <ChatComponent />
             </div>
 
             {/* 

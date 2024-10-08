@@ -27,10 +27,13 @@ export const DatabaseProfileCard = () => {
     }
 
     const session = await client.authenticateDevice(deviceId, true);
-    localStorage.setItem("user_id", session.user_id || "");
+
+    console.log(session);
 
     // save wallet to state
     const account = await client.getAccount(session);
+    localStorage.setItem("user_id", session.username || "");
+
     setAccountWallet(account.wallet || "");
   };
 
@@ -62,7 +65,7 @@ export const DatabaseProfileCard = () => {
                   <>
                     <div className="flex flex-col items-center mr-1">
                       <span className="text-xs">
-                        ID:{" "}
+                        Name:{" "}
                         {localStorage
                           .getItem("user_id")
                           ?.toString()

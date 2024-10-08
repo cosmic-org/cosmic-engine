@@ -6,3 +6,4 @@ export * from "./SignInNextAuthButton";
 export * from "./SignInWithSolanaButton";
 export * from "./DatabaseProfileCard";
 export * from "./SignInWithBurnerWallet";
+export * from "./ChatComponent";
