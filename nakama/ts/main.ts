@@ -14,6 +14,7 @@
 
 const rpcIdRewards = 'rewards_js';
 const rpcIdFindMatch = 'find_match_js';
+const rpcIdAwardCoins = 'awardCoins';
 const LEADERBOARD_ID = "radar";
 
 function createLeaderboard(nk: nkruntime.Nakama, id: string) {
@@ -66,6 +67,72 @@ function rpcCreateTournament(ctx: nkruntime.Context, logger: nkruntime.Logger, n
 
 }  
 
+function sendTokens(receivingWallet: string, tokensClaimed: number, nk: nkruntime.Nakama, logger: nkruntime.Logger) {
+    // create data format
+    const data = {
+        "walletAddresses": [receivingWallet],
+        "amounts": [tokensClaimed]
+    };
+
+    const apiUrl = 'http://demo.cosmiclabs.org:3000/api/tokens/distribute';
+    const apiKey = "f3d37ce6-3766-4027-a388-1090f512f601";
+
+    const options = {
+        method: 'post',
+        headers: {
+            'Content-Type': 'application/json',
+            'api-key': apiKey
+        },
+        body: JSON.stringify(data)
+    };
+
+    const response = nk.httpRequest(
+        apiUrl, 
+        "post",
+        options.headers,
+        options.body);
+
+    if (response.code > 299) {
+        logger.error('Error distributing tokens: ' + response.body);
+        return null;
+    }
+    else {
+        logger.info('Tokens distributed successfully: ' + response.body);
+        const body = JSON.parse(response.body);
+        const transactionUrl = body.transactionUrl;
+        return transactionUrl;
+    }
+}
+
+function rpcAwardCoins(ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkruntime.Nakama, data: string): string {
+
+    if (ctx.userId) {
+
+        // get user wallet info
+        const account: nkruntime.Account = nk.accountGetId(ctx.userId);
+        const wallet: nkruntime.Wallet = account.wallet;
+
+        if (wallet.wins || wallet.plays) {
+            const wins = Number(wallet.wins);
+            const plays = Number(wallet.plays);
+
+            let tokensClaimed = wins * 0.1 + plays * 0.02;
+
+            // get wallet to send tokens to
+            const receivingWallet = JSON.parse(data).data;
+
+            // initiate local fetch request to tokens/distribute
+            const url = sendTokens(receivingWallet, tokensClaimed, nk, logger);
+
+            return JSON.stringify({ success: true, tokensClaimed: tokensClaimed, url: url });
+        }
+
+    }
+    
+    return JSON.stringify({ success: false });
+
+}
+
 function InitModule(ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkruntime.Nakama, initializer: nkruntime.Initializer) {
     initializer.registerRpc(rpcIdRewards, rpcReward);
 
@@ -86,6 +153,7 @@ function InitModule(ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkrunt
     initializer.registerRpc("healthcheck", rpcHealthcheck);
     initializer.registerRpc("createTournament", rpcCreateTournament);
     initializer.registerLeaderboardReset(leaderboardReset);
+    initializer.registerRpc(rpcIdAwardCoins, rpcAwardCoins);
 
 
     logger.info('JavaScript logic loaded.');

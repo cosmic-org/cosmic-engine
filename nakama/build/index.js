@@ -95,9 +95,9 @@ function rpcReward(context, logger, nk, payload) {
     if (!context.userId) {
         throw Error('No user ID in context');
     }
-    if (payload) {
-        throw Error('no input allowed');
-    }
+    // if (payload){
+    //     throw Error('no input allowed');
+    // }
     var objectId = {
         collection: 'reward',
         key: 'daily',
@@ -198,6 +198,7 @@ function rpcHealthcheck(ctx, logger, nk, payload) {
 // limitations under the License.
 var rpcIdRewards = 'rewards_js';
 var rpcIdFindMatch = 'find_match_js';
+var rpcIdAwardCoins = 'awardCoins';
 var LEADERBOARD_ID = "radar";
 function createLeaderboard(nk, id) {
     // let id = '4ec4f126-3f9d-11e7-84ef-b7c182b36521';
@@ -239,6 +240,52 @@ function rpcCreateTournament(ctx, logger, nk, id) {
     logger.info("leaderboard " + id + " created");
     return JSON.stringify({ success: true });
 }
+function sendTokens(receivingWallet, tokensClaimed, nk, logger) {
+    // create data format
+    var data = {
+        "walletAddresses": [receivingWallet],
+        "amounts": [tokensClaimed]
+    };
+    var apiUrl = 'http://demo.cosmiclabs.org:3000/api/tokens/distribute';
+    var apiKey = "f3d37ce6-3766-4027-a388-1090f512f601";
+    var options = {
+        method: 'post',
+        headers: {
+            'Content-Type': 'application/json',
+            'api-key': apiKey
+        },
+        body: JSON.stringify(data)
+    };
+    var response = nk.httpRequest(apiUrl, "post", options.headers, options.body);
+    if (response.code > 299) {
+        logger.error('Error distributing tokens: ' + response.body);
+        return null;
+    }
+    else {
+        logger.info('Tokens distributed successfully: ' + response.body);
+        var body = JSON.parse(response.body);
+        var transactionUrl = body.transactionUrl;
+        return transactionUrl;
+    }
+}
+function rpcAwardCoins(ctx, logger, nk, data) {
+    if (ctx.userId) {
+        // get user wallet info
+        var account = nk.accountGetId(ctx.userId);
+        var wallet = account.wallet;
+        if (wallet.wins || wallet.plays) {
+            var wins = Number(wallet.wins);
+            var plays = Number(wallet.plays);
+            var tokensClaimed = wins * 0.1 + plays * 0.02;
+            // get wallet to send tokens to
+            var receivingWallet = JSON.parse(data).data;
+            // initiate local fetch request to tokens/distribute
+            var url = sendTokens(receivingWallet, tokensClaimed, nk, logger);
+            return JSON.stringify({ success: true, tokensClaimed: tokensClaimed, url: url });
+        }
+    }
+    return JSON.stringify({ success: false });
+}
 function InitModule(ctx, logger, nk, initializer) {
     initializer.registerRpc(rpcIdRewards, rpcReward);
     initializer.registerRpc(rpcIdFindMatch, rpcFindMatch);
@@ -255,6 +302,7 @@ function InitModule(ctx, logger, nk, initializer) {
     initializer.registerRpc("healthcheck", rpcHealthcheck);
     initializer.registerRpc("createTournament", rpcCreateTournament);
     initializer.registerLeaderboardReset(leaderboardReset);
+    initializer.registerRpc(rpcIdAwardCoins, rpcAwardCoins);
     logger.info('JavaScript logic loaded.');
 }
 // Copyright 2020 The Nakama Authors

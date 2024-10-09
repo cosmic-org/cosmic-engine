@@ -21,11 +21,6 @@ export const ChatComponent = () => {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [chatId, setChatId] = useState<string | null>(null);
 
-  useEffect(() => {
-    const nakamaClient = new Client("defaultkey", "127.0.0.1", "7350");
-    authenticate(nakamaClient);
-  }, []);
-
   const authenticate = async (client: Client) => {
     let deviceId = localStorage.getItem("deviceId");
     if (!deviceId) {
@@ -34,10 +29,16 @@ export const ChatComponent = () => {
     }
 
     const session = await client.authenticateDevice(deviceId, true);
+
     localStorage.setItem("user_id", session.user_id || "");
 
     sessionHandler(client, session);
   };
+
+  useEffect(() => {
+    const nakamaClient = new Client("defaultkey", "127.0.0.1", "7350");
+    authenticate(nakamaClient);
+  }, []);
 
   const sessionHandler = (client: Client, session: Session) => {
     const newSocket = client.createSocket(false);

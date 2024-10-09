@@ -1,7 +1,15 @@
 import { FC, ReactNode, SetStateAction, createContext, useCallback, useContext, useEffect, useState } from "react";
 import { LOCAL_STORAGE_BURNER_KEY } from "@/lib/const";
 import type { PrepareTransactionResolver, TransactionDetails } from "@/types";
-import { Cluster, Connection, Keypair, Transaction, VersionedTransaction, clusterApiUrl } from "@solana/web3.js";
+import {
+  Cluster,
+  Connection,
+  Keypair,
+  PublicKey,
+  Transaction,
+  VersionedTransaction,
+  clusterApiUrl,
+} from "@solana/web3.js";
 import base58 from "bs58";
 
 export interface MasterConfigurationState {
@@ -12,6 +20,8 @@ export interface MasterConfigurationState {
   setBurner(keypair: SetStateAction<Keypair | undefined>): void;
   balance: number;
   setBalance(balance: SetStateAction<number>): void;
+  faucetBalance: number;
+  setFaucetBalance(faucetBalance: SetStateAction<number>): void;
   cluster: Cluster;
   setCluster(cluster: SetStateAction<Cluster>): void;
   minRentCost: number;
@@ -34,6 +44,7 @@ export const GlobalContextProvider: FC<{ children: ReactNode }> = ({ children })
   const [burner, setBurner] = useState<Keypair | undefined>();
   const [cluster, setCluster] = useState<Cluster>("devnet");
   const [balance, setBalance] = useState<number>(0);
+  const [faucetBalance, setFaucetBalance] = useState<number>(0);
 
   const [transaction, setTransaction] = useState<Transaction | VersionedTransaction | null>(null);
   const [transactionDetails, setTransactionDetails] = useState<TransactionDetails | null>(null);
@@ -102,6 +113,11 @@ export const GlobalContextProvider: FC<{ children: ReactNode }> = ({ children })
     // get the current balance
     const balance = await connection.getBalance(burner.publicKey);
     setBalance(balance);
+
+    // get the faucet balance
+    const faucetPublicKey = new PublicKey(process.env.NEXT_PUBLIC_SOLANA_SERVER_WALLET_PUBLIC_KEY || "");
+    const faucetBalance = await connection.getBalance(faucetPublicKey);
+    setFaucetBalance(faucetBalance);
 
     console.log("Sync complete.");
   }
@@ -233,6 +249,8 @@ export const GlobalContextProvider: FC<{ children: ReactNode }> = ({ children })
         setBurner,
         balance,
         setBalance,
+        faucetBalance,
+        setFaucetBalance,
         cluster,
         setCluster,
         minRentCost,

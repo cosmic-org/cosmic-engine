@@ -1,5 +1,9 @@
 # 🌞 Cosmic Engine
 
+## Demo
+
+Try out Cosmic Engine at http://demo.cosmiclabs.org:3000/
+
 ## Requirements
 
 Before you begin, you need to install the following tools:

@@ -16,6 +16,7 @@ interface DistributionPayload {
 
 export async function POST(req: Request) {
   try {
+    console.log("Distribute tokens");
     const distributeApiKey = process.env.DISTRIBUTE_API_KEY;
 
     const apiKey = req.headers.get("api-key");

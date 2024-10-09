@@ -17,9 +17,9 @@ function rpcReward(context: nkruntime.Context, logger: nkruntime.Logger, nk: nkr
         throw Error('No user ID in context');
     }
 
-    if (payload){
-        throw Error('no input allowed');
-    }
+    // if (payload){
+    //     throw Error('no input allowed');
+    // }
 
     var objectId: nkruntime.StorageReadRequest = {
         collection: 'reward',
