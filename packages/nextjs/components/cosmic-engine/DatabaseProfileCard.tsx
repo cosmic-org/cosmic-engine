@@ -97,6 +97,21 @@ export const DatabaseProfileCard = () => {
 
                     <span className="text-xs mt-1">
                       <b>Account:</b> {burner?.publicKey.toString().replace(/^(.{4}).*(.{4})$/, "$1...$2")}
+                      <button
+                        type="button"
+                        className="mt-2 px-2 py-1 text-white rounded"
+                        onClick={() => {
+                          const defaultKeypair = localStorage.getItem("default_keypair");
+                          if (defaultKeypair) {
+                            navigator.clipboard.writeText(defaultKeypair);
+                            notification.success("PK copied to clipboard");
+                          } else {
+                            notification.error("No PK found in local storage");
+                          }
+                        }}
+                      >
+                        📋
+                      </button>
                     </span>
                     <span className="text-xs mt-1">
                       <b>Balance:</b> {balance}
@@ -138,19 +153,19 @@ export const DatabaseProfileCard = () => {
                             Claim Tokens
                           </button>
                         )}
-
-                        <button
-                          type="button"
-                          className="mt-4 px-4 py-2 bg-yellow-500 text-white rounded disabled:opacity-50"
-                          onClick={() =>
-                            // redirect to xoxo
-                            (window.location.href = "/xoxo")
-                          }
-                        >
-                          Play Tic-Tac-Monke
-                        </button>
                       </>
                     )}
+
+                    <button
+                      type="button"
+                      className="mt-4 px-4 py-2 bg-yellow-500 text-white rounded disabled:opacity-50"
+                      onClick={() =>
+                        // redirect to xoxo
+                        (window.location.href = "/xoxo")
+                      }
+                    >
+                      Play Tic-Tac-Monke
+                    </button>
                   </div>
                 );
               })()}
