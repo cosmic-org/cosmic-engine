@@ -26,6 +26,10 @@ export const menuLinks: HeaderMenuLink[] = [
     label: "Tic-Tac-Toe",
     href: "/xoxo",
   },
+  {
+    label: "LittleJS",
+    href: "/littlejs",
+  },
   /*
   {
     label: "Debug Contracts",

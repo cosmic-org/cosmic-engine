@@ -3532,6 +3532,7 @@ __metadata:
     eslint-config-prettier: ^8.5.0
     eslint-plugin-prettier: ^4.2.1
     ethers: ^6.13.1
+    littlejsengine: ^1.9.4
     next: ^14.0.4
     next-auth: ^4.24.7
     next-plausible: ^3.12.2
@@ -13828,6 +13829,13 @@ __metadata:
     lit-element: ^3.3.0
     lit-html: ^2.8.0
   checksum: 2480e733f7d022d3ecba91abc58a20968f0ca8f5fa30b3341ecf4bcf4845e674ad27b721a5ae53529cafc6ca603c015b80d0979ceb7a711e268ef20bb6bc7527
+  languageName: node
+  linkType: hard
+
+"littlejsengine@npm:^1.9.4":
+  version: 1.9.11
+  resolution: "littlejsengine@npm:1.9.11"
+  checksum: 2994cbdc3dbd31ddf360b5d57023fcb6130cd797d64a2eb7b1f5714365f156d151fc17266e5d304018b43cf56d6c6a78688ac56093662b58d0c724ae93ecb016
   languageName: node
   linkType: hard
 
