@@ -22,10 +22,10 @@ export const menuLinks: HeaderMenuLink[] = [
     label: "Home",
     href: "/",
   },
-  {
-    label: "Tic-Tac-Toe",
-    href: "/xoxo",
-  },
+  // {
+  //   label: "Tic-Tac-Toe",
+  //   href: "/xoxo",
+  // },
   {
     label: "LittleJS",
     href: "/littlejs",
