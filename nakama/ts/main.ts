@@ -105,9 +105,7 @@ function sendTokens(receivingWallet: string, tokensClaimed: number, nk: nkruntim
 }
 
 function rpcAwardCoins(ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkruntime.Nakama, data: string): string {
-
     if (ctx.userId) {
-
         // get user wallet info
         const account: nkruntime.Account = nk.accountGetId(ctx.userId);
         const wallet: nkruntime.Wallet = account.wallet;

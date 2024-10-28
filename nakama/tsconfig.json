@@ -4,6 +4,7 @@
   ],
   "compilerOptions": {
     "target": "es5",
+    "module": "AMD",
     "typeRoots": [
       "./node_modules"
     ],
