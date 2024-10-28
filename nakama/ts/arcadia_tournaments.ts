@@ -3,7 +3,7 @@ import validate from "../node_modules/uuid/dist/cjs/validate";
 import { createHmac } from "crypto";
 
 interface PlayerScore {
-    walletId: string;
+    walletAddress: string;
     score: number;
 }
 
@@ -25,6 +25,7 @@ interface EndTournamentPayload {
     otherPlayerScores: PlayerScore[]
 }
 
+// TODO: Needs to replace with ENV
 const baseUrl = "https://backend.dev.outplay.games";
 
 function getDynamicEnv(key: string): string {
@@ -32,6 +33,7 @@ function getDynamicEnv(key: string): string {
 }
 
 const getClientCredentials = (gameName: string): { clientId: string, clientSecret: string } => {
+    // TODO: Needs to finalize the game identifier for unique api keys 
     const clientId = getDynamicEnv(`${gameName}_CLIENT_ID`);
     const clientSecret = getDynamicEnv(`${gameName}_CLIENT_SECRET`);
 
@@ -142,9 +144,19 @@ function endTournament(ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkr
             throw new Error("Invalid token: " + endTournamentPayload.token);
         }
 
-        if (typeof endTournamentPayload.score !== "number") {
+        if (typeof endTournamentPayload.score !== "number" || endTournamentPayload.score < 0) {
             throw new Error("Invalid score: " + endTournamentPayload.score);
         }
+
+        endTournamentPayload.otherPlayerScores.forEach((scores) => {
+            if (typeof scores.score !== "number" || scores.score < 0) {
+                throw new Error("Invalid score: " + scores.score);
+            }
+
+            if (!isAddress(scores.walletAddress)) {
+                throw new Error("Invalid wallet address: " + scores.walletAddress);
+            }
+        })
 
         const authData = generateRequestParams({
             playerId: endTournamentPayload.playerId,
