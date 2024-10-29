@@ -21,12 +21,12 @@ export function rpcReward(context: nkruntime.Context, logger: nkruntime.Logger, 
     //     throw Error('no input allowed');
     // }
 
-    var objectId: nkruntime.StorageReadRequest = {
+    let objectId: nkruntime.StorageReadRequest = {
         collection: 'reward',
         key: 'daily',
         userId: context.userId,
     }
-    var objects: nkruntime.StorageObject[];
+    let objects: nkruntime.StorageObject[];
     try {
         objects = nk.storageRead([ objectId ]);
     } catch (error) {
@@ -34,7 +34,7 @@ export function rpcReward(context: nkruntime.Context, logger: nkruntime.Logger, 
         throw error;
     }
 
-    var dailyReward: any = {
+    let dailyReward: any = {
         lastClaimUnix: 0,
     }
     objects.forEach(object => {
@@ -43,11 +43,11 @@ export function rpcReward(context: nkruntime.Context, logger: nkruntime.Logger, 
         }
     });
 
-    var resp = {
+    let resp = {
         coinsReceived: 0,
     }
 
-    var d = new Date();
+    let d = new Date();
     d.setHours(0,0,0,0);
 
     // If last claimed is before the new day grant a new reward!
@@ -55,7 +55,7 @@ export function rpcReward(context: nkruntime.Context, logger: nkruntime.Logger, 
         resp.coinsReceived = 500;
 
         // Update player wallet.
-        var changeset = {
+        let changeset = {
             coins: resp.coinsReceived,
         }
         try {
@@ -65,7 +65,7 @@ export function rpcReward(context: nkruntime.Context, logger: nkruntime.Logger, 
             throw error;
         }
 
-        var notification: nkruntime.NotificationRequest = {
+        let notification: nkruntime.NotificationRequest = {
             code: 1001,
             content: changeset,
             persistent: true,
@@ -81,7 +81,7 @@ export function rpcReward(context: nkruntime.Context, logger: nkruntime.Logger, 
 
         dailyReward.lastClaimUnix = msecToSec(Date.now());
 
-        var write: nkruntime.StorageWriteRequest = {
+        let write: nkruntime.StorageWriteRequest = {
             collection: 'reward',
             key: 'daily',
             permissionRead: 1,
@@ -101,7 +101,7 @@ export function rpcReward(context: nkruntime.Context, logger: nkruntime.Logger, 
         }
     }
 
-    var result = JSON.stringify(resp);
+    let result = JSON.stringify(resp);
     logger.debug('rpcReward resp: %q', result)
 
     return result;
