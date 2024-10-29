@@ -9,24 +9,24 @@ interface PlayerScore {
 
 interface StartTournamentPayload {
     gameName: string;
-    playerId: string,
-    tournamentId: string,
-    token: string,
-    walletAddress: string,
-    playerIp: string,
+    playerId: string;
+    tournamentId: string;
+    token: string;
+    walletAddress: string;
+    playerIp: string;
 };
 
 interface EndTournamentPayload {
     gameName: string;
-    playerId: string,
-    tournamentId: string,
-    token: string,
-    score: number,
-    otherPlayerScores: PlayerScore[]
+    playerId: string;
+    tournamentId: string;
+    token: string;
+    score: number;
+    otherPlayerScores: PlayerScore[];
 }
 
 // TODO: Needs to replace with ENV
-const baseUrl = "https://backend.dev.outplay.games";
+const baseUrl = process.env.TOURNAMENT_API_URL;
 
 function getDynamicEnv(key: string): string {
     return process.env[key] || "";
@@ -44,8 +44,8 @@ const getClientCredentials = (gameName: string): { clientId: string, clientSecre
     return { clientId, clientSecret };
 }
 
-const generateRequestParams = (params: Record<string, unknown>): Record<string, unknown> => {
-    const { clientId, clientSecret } = getClientCredentials('Game Identifier To Be Decided');
+const generateRequestParams = (gameName: string, params: Record<string, unknown>): Record<string, unknown> => {
+    const { clientId, clientSecret } = getClientCredentials(gameName);
 
     const nonce = new Date().getTime();
 
@@ -74,81 +74,97 @@ const generateRequestParams = (params: Record<string, unknown>): Record<string, 
     return params;
 }
 
-function startTournament(ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkruntime.Nakama, payload: string) {
+function rpcStartTournament(ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkruntime.Nakama, payload: string): string {
     try {
-        let startTournamentPayload: StartTournamentPayload = JSON.parse(payload);
+        let {
+            gameName,
+            playerId,
+            tournamentId,
+            token,
+            walletAddress,
+            playerIp,
+        }: StartTournamentPayload = JSON.parse(payload);
 
-        if (!validate(startTournamentPayload.playerId)) {
-            throw new Error("Invalid player ID: " + startTournamentPayload.playerId);
+
+        if (!validate(playerId)) {
+            throw new Error("Invalid player ID: " + playerId);
         }
 
-        if (!validate(startTournamentPayload.tournamentId)) {
-            throw new Error("Invalid tournament ID: " + startTournamentPayload.tournamentId);
+        if (!validate(tournamentId)) {
+            throw new Error("Invalid tournament ID: " + tournamentId);
         }
 
-        if (!startTournamentPayload.token) {
-            throw new Error("Invalid token: " + startTournamentPayload.token);
+        if (!token) {
+            throw new Error("Invalid token: " + token);
         }
 
-        if (startTournamentPayload.walletAddress && startTournamentPayload.walletAddress !== "") {
-            if (!isAddress(startTournamentPayload.walletAddress)) {
-                throw new Error("Invalid wallet address: " + startTournamentPayload.walletAddress);
+        if (walletAddress && walletAddress !== "") {
+            if (!isAddress(walletAddress)) {
+                throw new Error("Invalid wallet address: " + walletAddress);
             }
         }
 
-        startTournamentPayload.walletAddress = startTournamentPayload.walletAddress || "";
-        startTournamentPayload.playerIp = ctx.clientIp as string || "";
+        walletAddress = walletAddress || "";
+        playerIp = ctx.clientIp as string || "";
 
-        const authData = generateRequestParams({
-            playerId: startTournamentPayload.playerId,
-            tournamentI: startTournamentPayload.tournamentId,
-            token: startTournamentPayload.token,
-            walletAddress: startTournamentPayload.walletAddress,
+        const body = generateRequestParams(gameName, {
+            playerId,
+            tournamentId,
+            token,
+            walletAddress,
         });
 
-        const apiUrl = `${baseUrl}/tournament-round/$tournamentId/start`;
+        const apiUrl = `${baseUrl}/tournament-round/${tournamentId}/start`;
 
         const options = {
-            method: 'post',
             headers: {
                 "Content-Type": "application/json",
-                "x-arcadia-player-ip": startTournamentPayload.playerIp,
+                "x-arcadia-player-ip": playerIp,
             },
-            body: JSON.stringify(startTournamentPayload)
+            body: JSON.stringify(body)
         };
 
-        const response = nk.httpRequest(
+        nk.httpRequest(
             apiUrl,
             "post",
             options.headers,
             options.body
         );
+
+        return JSON.stringify({ code: 200, message: "OK" });
     } catch (error) {
         throw new Error((error as any)?.message || "Something went wrong");
     }
 }
 
-function endTournament(ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkruntime.Nakama, payload: string) {
+function rpcEndTournament(ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkruntime.Nakama, payload: string): string {
     try {
-        const endTournamentPayload: EndTournamentPayload = JSON.parse(payload);
+        const {
+            gameName,
+            playerId,
+            tournamentId,
+            token,
+            score,
+            otherPlayerScores
+        }: EndTournamentPayload = JSON.parse(payload);
 
-        if (!validate(endTournamentPayload.playerId)) {
-            throw new Error("Invalid player ID: " + endTournamentPayload.playerId);
+        if (!validate(playerId)) {
+            throw new Error("Invalid player ID: " + playerId);
         }
 
-        if (!validate(endTournamentPayload.tournamentId)) {
-            throw new Error("Invalid t tournament ID: " + endTournamentPayload.tournamentId);
+        if (!validate(tournamentId)) {
+            throw new Error("Invalid t tournament ID: " + tournamentId);
         }
 
-        if (!endTournamentPayload.token) {
-            throw new Error("Invalid token: " + endTournamentPayload.token);
+        if (!token) {
+            throw new Error("Invalid token: " + token);
         }
 
-        if (typeof endTournamentPayload.score !== "number" || endTournamentPayload.score < 0) {
-            throw new Error("Invalid score: " + endTournamentPayload.score);
+        if (typeof score !== "number" || score < 0) {
+            throw new Error("Invalid score: " + score);
         }
 
-        endTournamentPayload.otherPlayerScores.forEach((scores) => {
+        otherPlayerScores.forEach((scores) => {
             if (typeof scores.score !== "number" || scores.score < 0) {
                 throw new Error("Invalid score: " + scores.score);
             }
@@ -158,29 +174,37 @@ function endTournament(ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkr
             }
         })
 
-        const authData = generateRequestParams({
-            playerId: endTournamentPayload.playerId,
-            tournamentI: endTournamentPayload.tournamentId,
-            token: endTournamentPayload.token,
-            score: endTournamentPayload.score
-        });
+        let data: Record<string, unknown> = {
+            playerId,
+            tournamentId,
+            score,
+            token,
+        };
 
-        const apiUrl = `${baseUrl}/tournament-round/$tournamentId/end`;
+        if (otherPlayerScores.length > 0) {
+            data["otherPlayerScores"] = otherPlayerScores;
+        }
+
+        const body = generateRequestParams(gameName, data);
+
+        const apiUrl = `${baseUrl}/tournament-round/${tournamentId}/end`;
 
         const options = {
             method: 'post',
             headers: {
                 "Content-Type": "application/json"
             },
-            body: JSON.stringify(endTournamentPayload)
+            body: JSON.stringify(body)
         };
 
-        const response = nk.httpRequest(
+        nk.httpRequest(
             apiUrl,
             "post",
             options.headers,
             options.body
         );
+
+        return JSON.stringify({ code: 200, message: "OK" });
     } catch (error) {
         throw new Error((error as any)?.message || "Something went wrong");
     }

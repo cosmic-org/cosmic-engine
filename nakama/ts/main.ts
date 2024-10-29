@@ -16,6 +16,8 @@ const rpcIdRewards = 'rewards_js';
 const rpcIdFindMatch = 'find_match_js';
 const rpcIdAwardCoins = 'awardCoins';
 const LEADERBOARD_ID = "radar";
+const startTournament = "startTournament";
+const endTournament = "endTournament";
 
 function createLeaderboard(nk: nkruntime.Nakama, id: string) {
     // let id = '4ec4f126-3f9d-11e7-84ef-b7c182b36521';
@@ -152,6 +154,9 @@ function InitModule(ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkrunt
     initializer.registerRpc("createTournament", rpcCreateTournament);
     initializer.registerLeaderboardReset(leaderboardReset);
     initializer.registerRpc(rpcIdAwardCoins, rpcAwardCoins);
+
+    // initializer.registerRpc(startTournament, rpcStartTournament);
+    // initializer.registerRpc(endTournament, rpcEndTournament);
 
 
     logger.info('JavaScript logic loaded.');
