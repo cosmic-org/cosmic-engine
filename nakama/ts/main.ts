@@ -12,6 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { rpcEndTournament, rpcStartTournament } from "./arcadia_tournaments";
+import { rpcReward } from "./daily_rewards";
+import { rpcHealthcheck } from "./healthcheck";
+import { matchInit, matchJoin, matchJoinAttempt, matchLeave, matchLoop, matchSignal, matchTerminate, moduleName } from "./match_handler";
+import { rpcFindMatch } from "./match_rpc";
+
 const rpcIdRewards = 'rewards_js';
 const rpcIdFindMatch = 'find_match_js';
 const rpcIdAwardCoins = 'awardCoins';
@@ -155,9 +161,12 @@ function InitModule(ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkrunt
     initializer.registerLeaderboardReset(leaderboardReset);
     initializer.registerRpc(rpcIdAwardCoins, rpcAwardCoins);
 
-    // initializer.registerRpc(startTournament, rpcStartTournament);
-    // initializer.registerRpc(endTournament, rpcEndTournament);
+    initializer.registerRpc(startTournament, rpcStartTournament);
+    initializer.registerRpc(endTournament, rpcEndTournament);
 
 
     logger.info('JavaScript logic loaded.');
 }
+
+// Reference InitModule to avoid it getting removed on build
+!InitModule && InitModule.bind(null);

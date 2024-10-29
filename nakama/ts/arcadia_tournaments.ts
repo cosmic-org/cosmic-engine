@@ -74,7 +74,7 @@ const generateRequestParams = (gameName: string, params: Record<string, unknown>
     return params;
 }
 
-function rpcStartTournament(ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkruntime.Nakama, payload: string): string {
+export function rpcStartTournament(ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkruntime.Nakama, payload: string): string {
     try {
         let {
             gameName,
@@ -137,7 +137,7 @@ function rpcStartTournament(ctx: nkruntime.Context, logger: nkruntime.Logger, nk
     }
 }
 
-function rpcEndTournament(ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkruntime.Nakama, payload: string): string {
+export function rpcEndTournament(ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkruntime.Nakama, payload: string): string {
     try {
         const {
             gameName,

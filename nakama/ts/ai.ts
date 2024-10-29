@@ -12,17 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-const aiUserId = "ai-user-id";
-const tfServingAddress: string= "http://tf:8501/v1/models/ttt:predict";
+import { State } from "./match_handler";
+import { Mark, OpCode } from "./messages";
 
-let aiPresence: nkruntime.Presence = {
+export const aiUserId = "ai-user-id";
+export const tfServingAddress: string= "http://tf:8501/v1/models/ttt:predict";
+
+export const aiPresence: nkruntime.Presence = {
 	userId: aiUserId,
 	sessionId: "",
 	username: aiUserId,
 	node: "",
 }
 
-function aiMessage(code: OpCode, data: ArrayBuffer): nkruntime.MatchMessage {
+export function aiMessage(code: OpCode, data: ArrayBuffer): nkruntime.MatchMessage {
 	return {
 		sender: aiPresence,
 		persistence: true,
@@ -38,7 +41,7 @@ type cell = number[];
 type row = cell[];
 type board = row[];
 
-function aiTurn(state: State, logger: nkruntime.Logger, nk: nkruntime.Nakama) {
+export function aiTurn(state: State, logger: nkruntime.Logger, nk: nkruntime.Nakama) {
 	let aiCell = [1, 0];
 	let playerCell = [0, 1];
 	let undefCell = [0, 0];
