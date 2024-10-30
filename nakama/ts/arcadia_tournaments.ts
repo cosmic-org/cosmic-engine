@@ -1,6 +1,5 @@
 import { isAddress } from "../node_modules/ethers/lib.commonjs/ethers";
 import validate from "../node_modules/uuid/dist/cjs/validate";
-import { createHmac } from "crypto";
 
 interface PlayerScore {
     walletAddress: string;
@@ -44,34 +43,19 @@ const getClientCredentials = (gameName: string): { clientId: string, clientSecre
     return { clientId, clientSecret };
 }
 
-const generateRequestParams = (gameName: string, params: Record<string, unknown>): Record<string, unknown> => {
+const generateAuthToken = (nk: nkruntime.Nakama, gameName: string, playerId: string, tournamentId: string): { clientId: string, authToken: string } => {
     const { clientId, clientSecret } = getClientCredentials(gameName);
 
-    const nonce = new Date().getTime();
+    const secret = `${tournamentId}::${clientId}::${clientSecret}`.toLowerCase();;
 
-    params.nonce = nonce;
-    params.clientId = clientId;
-
-    const paramKeys = Object.keys(params);
-    paramKeys.sort((firstEl, secondEl) => firstEl.localeCompare(secondEl));
-
-    let tmpStr = "";
-    paramKeys.forEach((paramKey) => {
-        if (Object.prototype.hasOwnProperty.call(params, paramKey)) {
-            const value =
-                typeof params[paramKey] === "object"
-                    ? JSON.stringify(params[paramKey])
-                    : params[paramKey];
-            tmpStr += `${paramKey}=${value}`;
-        }
+    const jwtToken = nk.jwtGenerate("RS256", secret, {
+        sub: playerId, // Subject (usually a user ID)
+        iat: Math.floor(Date.now() / 1000), // Issued at time
+        exp: Math.floor(Date.now() / 1000) + (2 * 60), // Expiration time (2 mins from now)
+        iss: 'nakama-server', // Issuer (optional)
     });
 
-    const hash = createHmac("sha512", clientSecret);
-    hash.update(tmpStr);
-
-    params.clientAccessToken = hash.digest("hex");
-
-    return params;
+    return { clientId, authToken: jwtToken };
 }
 
 export function rpcStartTournament(ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkruntime.Nakama, payload: string): string {
@@ -107,12 +91,7 @@ export function rpcStartTournament(ctx: nkruntime.Context, logger: nkruntime.Log
         walletAddress = walletAddress || "";
         playerIp = ctx.clientIp as string || "";
 
-        const body = generateRequestParams(gameName, {
-            playerId,
-            tournamentId,
-            token,
-            walletAddress,
-        });
+        const { clientId, authToken } = generateAuthToken(nk, gameName, playerId, tournamentId);
 
         const apiUrl = `${baseUrl}/tournament-round/${tournamentId}/start`;
 
@@ -121,7 +100,13 @@ export function rpcStartTournament(ctx: nkruntime.Context, logger: nkruntime.Log
                 "Content-Type": "application/json",
                 "x-arcadia-player-ip": playerIp,
             },
-            body: JSON.stringify(body)
+            body: JSON.stringify({
+                playerId,
+                authToken,
+                clientToken: token,
+                clientId,
+                walletAddress
+            })
         };
 
         nk.httpRequest(
@@ -174,18 +159,7 @@ export function rpcEndTournament(ctx: nkruntime.Context, logger: nkruntime.Logge
             }
         })
 
-        let data: Record<string, unknown> = {
-            playerId,
-            tournamentId,
-            score,
-            token,
-        };
-
-        if (otherPlayerScores.length > 0) {
-            data["otherPlayerScores"] = otherPlayerScores;
-        }
-
-        const body = generateRequestParams(gameName, data);
+        const { clientId, authToken } = generateAuthToken(nk, gameName, playerId, tournamentId);
 
         const apiUrl = `${baseUrl}/tournament-round/${tournamentId}/end`;
 
@@ -194,7 +168,14 @@ export function rpcEndTournament(ctx: nkruntime.Context, logger: nkruntime.Logge
             headers: {
                 "Content-Type": "application/json"
             },
-            body: JSON.stringify(body)
+            body: JSON.stringify({
+                playerId,
+                authToken,
+                clientToken: token,
+                clientId,
+                score,
+                otherPlayerScores
+            })
         };
 
         nk.httpRequest(
