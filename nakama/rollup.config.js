@@ -28,6 +28,6 @@ export default {
     }),
   ],
   output: {
-    file: 'build/index.js',
+    file: 'data/modules/build/index.js',
   },
 };

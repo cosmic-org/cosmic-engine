@@ -1,5 +1,8 @@
-import { isAddress } from "../node_modules/ethers/lib.commonjs/ethers";
 import validate from "../node_modules/uuid/dist/cjs/validate";
+
+function isEvmAddress(address) {
+    return (/^(0x){1}[0-9a-fA-F]{40}$/i.test(address));
+}
 
 interface PlayerScore {
     walletAddress: string;
@@ -25,16 +28,10 @@ interface EndTournamentPayload {
 }
 
 // TODO: Needs to replace with ENV
-const baseUrl = process.env.TOURNAMENT_API_URL;
-
-function getDynamicEnv(key: string): string {
-    return process.env[key] || "";
-}
-
-const getClientCredentials = (gameName: string): { clientId: string, clientSecret: string } => {
+const getClientCredentials = (environmentalVariables: {[key: string]: string}, gameName: string): { clientId: string, clientSecret: string } => {
     // TODO: Needs to finalize the game identifier for unique api keys 
-    const clientId = getDynamicEnv(`${gameName}_CLIENT_ID`);
-    const clientSecret = getDynamicEnv(`${gameName}_CLIENT_SECRET`);
+    const clientId = environmentalVariables[`${gameName}_CLIENT_ID`];
+    const clientSecret = environmentalVariables[`${gameName}_CLIENT_SECRET`];
 
     if (clientId === "" || clientSecret === "") {
         throw new Error("Client credentials invalid");
@@ -43,9 +40,7 @@ const getClientCredentials = (gameName: string): { clientId: string, clientSecre
     return { clientId, clientSecret };
 }
 
-const generateAuthToken = (nk: nkruntime.Nakama, gameName: string, playerId: string, tournamentId: string): { clientId: string, authToken: string } => {
-    const { clientId, clientSecret } = getClientCredentials(gameName);
-
+const generateAuthToken = (nk: nkruntime.Nakama, clientId: string, clientSecret: string, gameName: string, playerId: string, tournamentId: string): { clientId: string, authToken: string } => {
     const secret = `${tournamentId}::${clientId}::${clientSecret}`.toLowerCase();;
 
     const jwtToken = nk.jwtGenerate("RS256", secret, {
@@ -68,8 +63,6 @@ export function rpcStartTournament(ctx: nkruntime.Context, logger: nkruntime.Log
             walletAddress,
             playerIp,
         }: StartTournamentPayload = JSON.parse(payload);
-
-
         if (!validate(playerId)) {
             throw new Error("Invalid player ID: " + playerId);
         }
@@ -83,7 +76,7 @@ export function rpcStartTournament(ctx: nkruntime.Context, logger: nkruntime.Log
         }
 
         if (walletAddress && walletAddress !== "") {
-            if (!isAddress(walletAddress)) {
+            if (!isEvmAddress(walletAddress)) {
                 throw new Error("Invalid wallet address: " + walletAddress);
             }
         }
@@ -91,7 +84,13 @@ export function rpcStartTournament(ctx: nkruntime.Context, logger: nkruntime.Log
         walletAddress = walletAddress || "";
         playerIp = ctx.clientIp as string || "";
 
-        const { clientId, authToken } = generateAuthToken(nk, gameName, playerId, tournamentId);
+        const environmentalVariables = ctx.env;
+
+        const baseUrl = environmentalVariables["TOURNAMENT_API_URL"];
+
+        const { clientId, clientSecret } = getClientCredentials(environmentalVariables, gameName);
+
+        const authToken = generateAuthToken(nk, clientId, clientSecret, gameName, playerId, tournamentId);
 
         const apiUrl = `${baseUrl}/tournament-round/${tournamentId}/start`;
 
@@ -154,12 +153,18 @@ export function rpcEndTournament(ctx: nkruntime.Context, logger: nkruntime.Logge
                 throw new Error("Invalid score: " + scores.score);
             }
 
-            if (!isAddress(scores.walletAddress)) {
+            if (!isEvmAddress(scores.walletAddress)) {
                 throw new Error("Invalid wallet address: " + scores.walletAddress);
             }
         })
 
-        const { clientId, authToken } = generateAuthToken(nk, gameName, playerId, tournamentId);
+        const environmentalVariables = ctx.env;
+
+        const baseUrl = environmentalVariables["TOURNAMENT_API_URL"];
+
+        const { clientId, clientSecret } = getClientCredentials(environmentalVariables, gameName);
+
+        const authToken = generateAuthToken(nk, clientId, clientSecret, gameName, playerId, tournamentId);
 
         const apiUrl = `${baseUrl}/tournament-round/${tournamentId}/end`;
 

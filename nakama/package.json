@@ -22,7 +22,6 @@
   },
   "homepage": "https://github.com/heroiclabs/nakama-project-template#readme",
   "dependencies": {
-    "ethers": "^6.13.4",
     "nakama-runtime": "github:heroiclabs/nakama-common#master",
     "uuid": "^11.0.1"
   },

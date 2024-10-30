@@ -3,6 +3,10 @@ console:
 logger:
   level: "DEBUG"
 runtime:
+  env:
+    - "TOURNAMENT_API_URL=hi"
+    - "GAME_CLIENT_ID=hello"
+    - "GAME_CLIENT_SECRET=world"
   js_entrypoint: "build/index.js"
 session:
   token_expiry_sec: 7200 # 2 hours
