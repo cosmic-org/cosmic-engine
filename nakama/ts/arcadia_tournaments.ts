@@ -27,33 +27,32 @@ interface EndTournamentPayload {
     otherPlayerScores: PlayerScore[];
 }
 
-// TODO: Needs to replace with ENV
 const getClientCredentials = (environmentalVariables: {[key: string]: string}, gameName: string): { clientId: string, clientSecret: string } => {
-    // TODO: Needs to finalize the game identifier for unique api keys 
     const clientId = environmentalVariables[`${gameName}_CLIENT_ID`];
     const clientSecret = environmentalVariables[`${gameName}_CLIENT_SECRET`];
 
-    if (clientId === "" || clientSecret === "") {
+    if (!clientId || !clientSecret || clientId === "" || clientSecret === "") {
         throw new Error("Client credentials invalid");
     }
 
     return { clientId, clientSecret };
 }
 
-const generateAuthToken = (nk: nkruntime.Nakama, clientId: string, clientSecret: string, gameName: string, playerId: string, tournamentId: string): { clientId: string, authToken: string } => {
-    const secret = `${tournamentId}::${clientId}::${clientSecret}`.toLowerCase();;
+const generateAuth = (nk: nkruntime.Nakama, clientId: string, clientSecret: string, gameName: string, playerId: string, tournamentId: string): { hash: string, nonce: number } => {
+    // const secret = `${tournamentId}::${clientId}::${clientSecret}`.toLowerCase();
+    const nonce = new Date().getTime();
 
-    const jwtToken = nk.jwtGenerate("RS256", secret, {
-        sub: playerId, // Subject (usually a user ID)
-        iat: Math.floor(Date.now() / 1000), // Issued at time
-        exp: Math.floor(Date.now() / 1000) + (2 * 60), // Expiration time (2 mins from now)
-        iss: 'nakama-server', // Issuer (optional)
-    });
+    // const hash = nk.rsaSha256Hash(JSON.stringify({
+    //     tournamentId,
+    //     playerId,
+    //     clientId,
+    //     nonce
+    // }), `private_key`);
 
-    return { clientId, authToken: jwtToken };
+    return { hash: "dummy_hash", nonce };
 }
 
-export function rpcStartTournament(ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkruntime.Nakama, payload: string): string {
+export function rpcStartArcadiaTournament(ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkruntime.Nakama, payload: string): string {
     try {
         let {
             gameName,
@@ -63,6 +62,7 @@ export function rpcStartTournament(ctx: nkruntime.Context, logger: nkruntime.Log
             walletAddress,
             playerIp,
         }: StartTournamentPayload = JSON.parse(payload);
+
         if (!validate(playerId)) {
             throw new Error("Invalid player ID: " + playerId);
         }
@@ -71,7 +71,7 @@ export function rpcStartTournament(ctx: nkruntime.Context, logger: nkruntime.Log
             throw new Error("Invalid tournament ID: " + tournamentId);
         }
 
-        if (!token) {
+        if (!token || token === "") {
             throw new Error("Invalid token: " + token);
         }
 
@@ -90,7 +90,7 @@ export function rpcStartTournament(ctx: nkruntime.Context, logger: nkruntime.Log
 
         const { clientId, clientSecret } = getClientCredentials(environmentalVariables, gameName);
 
-        const authToken = generateAuthToken(nk, clientId, clientSecret, gameName, playerId, tournamentId);
+        const { hash, nonce } = generateAuth(nk, clientId, clientSecret, gameName, playerId, tournamentId);
 
         const apiUrl = `${baseUrl}/tournament-round/${tournamentId}/start`;
 
@@ -101,19 +101,26 @@ export function rpcStartTournament(ctx: nkruntime.Context, logger: nkruntime.Log
             },
             body: JSON.stringify({
                 playerId,
-                authToken,
+                authToken: hash,
+                nonce,
                 clientToken: token,
                 clientId,
                 walletAddress
             })
         };
 
-        nk.httpRequest(
-            apiUrl,
-            "post",
-            options.headers,
-            options.body
-        );
+        (async () => {
+            try {
+                await nk.httpRequest(
+                    apiUrl,
+                    "post",
+                    options.headers,
+                    options.body
+                );
+            } catch (e) {
+                logger.error(e);
+            }
+        })();
 
         return JSON.stringify({ code: 200, message: "OK" });
     } catch (error) {
@@ -121,7 +128,7 @@ export function rpcStartTournament(ctx: nkruntime.Context, logger: nkruntime.Log
     }
 }
 
-export function rpcEndTournament(ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkruntime.Nakama, payload: string): string {
+export function rpcEndArcadiaTournament(ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkruntime.Nakama, payload: string): string {
     try {
         const {
             gameName,
@@ -140,7 +147,7 @@ export function rpcEndTournament(ctx: nkruntime.Context, logger: nkruntime.Logge
             throw new Error("Invalid t tournament ID: " + tournamentId);
         }
 
-        if (!token) {
+        if (!token || token === "") {
             throw new Error("Invalid token: " + token);
         }
 
@@ -148,7 +155,7 @@ export function rpcEndTournament(ctx: nkruntime.Context, logger: nkruntime.Logge
             throw new Error("Invalid score: " + score);
         }
 
-        otherPlayerScores.forEach((scores) => {
+        otherPlayerScores?.forEach((scores) => {
             if (typeof scores.score !== "number" || scores.score < 0) {
                 throw new Error("Invalid score: " + scores.score);
             }
@@ -164,7 +171,7 @@ export function rpcEndTournament(ctx: nkruntime.Context, logger: nkruntime.Logge
 
         const { clientId, clientSecret } = getClientCredentials(environmentalVariables, gameName);
 
-        const authToken = generateAuthToken(nk, clientId, clientSecret, gameName, playerId, tournamentId);
+        const { hash, nonce } = generateAuth(nk, clientId, clientSecret, gameName, playerId, tournamentId);
 
         const apiUrl = `${baseUrl}/tournament-round/${tournamentId}/end`;
 
@@ -175,7 +182,8 @@ export function rpcEndTournament(ctx: nkruntime.Context, logger: nkruntime.Logge
             },
             body: JSON.stringify({
                 playerId,
-                authToken,
+                authToken: hash,
+                nonce,
                 clientToken: token,
                 clientId,
                 score,
@@ -183,12 +191,18 @@ export function rpcEndTournament(ctx: nkruntime.Context, logger: nkruntime.Logge
             })
         };
 
-        nk.httpRequest(
-            apiUrl,
-            "post",
-            options.headers,
-            options.body
-        );
+        (async () => {
+            try {
+                await nk.httpRequest(
+                    apiUrl,
+                    "post",
+                    options.headers,
+                    options.body
+                );
+            } catch (e) {
+                logger.error(e);
+            }
+        })();
 
         return JSON.stringify({ code: 200, message: "OK" });
     } catch (error) {
