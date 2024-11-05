@@ -165,7 +165,7 @@ var getClientCredentials = function getClientCredentials(environmentalVariables,
     clientSecret: clientSecret
   };
 };
-var generateAuthToken = function generateAuthToken(nk, clientId, clientSecret, gameName, playerId, tournamentId) {
+var generateAuthToken = function generateAuthToken(nk, clientId, clientSecret, playerId, tournamentId) {
   var secret = "".concat(tournamentId, "::").concat(clientId, "::").concat(clientSecret).toLowerCase();
   var authToken = nk.jwtGenerate("HS256", secret, {
     sub: playerId,
@@ -206,7 +206,7 @@ function rpcStartArcadiaTournament(ctx, logger, nk, payload) {
     var _b = getClientCredentials(environmentalVariables, gameName),
       clientId = _b.clientId,
       clientSecret = _b.clientSecret;
-    var authToken = generateAuthToken(nk, clientId, clientSecret, gameName, playerId, tournamentId);
+    var authToken = generateAuthToken(nk, clientId, clientSecret, playerId, tournamentId);
     var apiUrl_1 = "".concat(baseUrl, "/tournament-round/").concat(tournamentId, "/start");
     var options_1 = {
       headers: {
@@ -285,7 +285,7 @@ function rpcEndArcadiaTournament(ctx, logger, nk, payload) {
     var _b = getClientCredentials(environmentalVariables, gameName),
       clientId = _b.clientId,
       clientSecret = _b.clientSecret;
-    var authToken = generateAuthToken(nk, clientId, clientSecret, gameName, playerId, tournamentId);
+    var authToken = generateAuthToken(nk, clientId, clientSecret, playerId, tournamentId);
     var apiUrl_2 = "".concat(baseUrl, "/tournament-round/").concat(tournamentId, "/end");
     var options_2 = {
       method: 'post',
