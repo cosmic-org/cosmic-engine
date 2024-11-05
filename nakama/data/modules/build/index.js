@@ -165,14 +165,17 @@ var getClientCredentials = function getClientCredentials(environmentalVariables,
     clientSecret: clientSecret
   };
 };
-var generateAuth = function generateAuth(nk, clientId, clientSecret, gameName, playerId, tournamentId) {
-  var nonce = new Date().getTime();
-  return {
-    hash: "dummy_hash",
-    nonce: nonce
-  };
+var generateAuthToken = function generateAuthToken(nk, clientId, clientSecret, gameName, playerId, tournamentId) {
+  var secret = "".concat(tournamentId, "::").concat(clientId, "::").concat(clientSecret).toLowerCase();
+  var authToken = nk.jwtGenerate("HS256", secret, {
+    sub: playerId,
+    iat: Math.floor(Date.now() / 1000),
+    exp: Math.floor(Date.now() / 1000) + 3 * 60,
+    iss: 'nakama-server'
+  });
+  return authToken;
 };
-function rpcStartTournament(ctx, logger, nk, payload) {
+function rpcStartArcadiaTournament(ctx, logger, nk, payload) {
   var _this = this;
   try {
     var _a = JSON.parse(payload),
@@ -203,9 +206,7 @@ function rpcStartTournament(ctx, logger, nk, payload) {
     var _b = getClientCredentials(environmentalVariables, gameName),
       clientId = _b.clientId,
       clientSecret = _b.clientSecret;
-    var _c = generateAuth(nk, clientId, clientSecret, gameName, playerId, tournamentId),
-      hash = _c.hash,
-      nonce = _c.nonce;
+    var authToken = generateAuthToken(nk, clientId, clientSecret, gameName, playerId, tournamentId);
     var apiUrl_1 = "".concat(baseUrl, "/tournament-round/").concat(tournamentId, "/start");
     var options_1 = {
       headers: {
@@ -214,8 +215,7 @@ function rpcStartTournament(ctx, logger, nk, payload) {
       },
       body: JSON.stringify({
         playerId: playerId,
-        authToken: hash,
-        nonce: nonce,
+        authToken: authToken,
         clientToken: token,
         clientId: clientId,
         walletAddress: walletAddress
@@ -250,7 +250,7 @@ function rpcStartTournament(ctx, logger, nk, payload) {
     throw new Error((error === null || error === void 0 ? void 0 : error.message) || "Something went wrong");
   }
 }
-function rpcEndTournament(ctx, logger, nk, payload) {
+function rpcEndArcadiaTournament(ctx, logger, nk, payload) {
   var _this = this;
   try {
     var _a = JSON.parse(payload),
@@ -285,9 +285,7 @@ function rpcEndTournament(ctx, logger, nk, payload) {
     var _b = getClientCredentials(environmentalVariables, gameName),
       clientId = _b.clientId,
       clientSecret = _b.clientSecret;
-    var _c = generateAuth(nk, clientId, clientSecret, gameName, playerId, tournamentId),
-      hash = _c.hash,
-      nonce = _c.nonce;
+    var authToken = generateAuthToken(nk, clientId, clientSecret, gameName, playerId, tournamentId);
     var apiUrl_2 = "".concat(baseUrl, "/tournament-round/").concat(tournamentId, "/end");
     var options_2 = {
       method: 'post',
@@ -296,8 +294,7 @@ function rpcEndTournament(ctx, logger, nk, payload) {
       },
       body: JSON.stringify({
         playerId: playerId,
-        authToken: hash,
-        nonce: nonce,
+        authToken: authToken,
         clientToken: token,
         clientId: clientId,
         score: score,
@@ -938,8 +935,8 @@ var rpcIdRewards = 'rewards_js';
 var rpcIdFindMatch = 'find_match_js';
 var rpcIdAwardCoins = 'awardCoins';
 var LEADERBOARD_ID = "radar";
-var startTournament = "startTournament";
-var endTournament = "endTournament";
+var startArcadiaTournament = "start_arcadia_tournament";
+var endArcadiaTournament = "end_arcadia_tournament";
 function createLeaderboard(nk, id) {
   var authoritative = false;
   var sort = "descending";
@@ -1043,8 +1040,8 @@ function InitModule(ctx, logger, nk, initializer) {
   initializer.registerRpc("createTournament", rpcCreateTournament);
   initializer.registerLeaderboardReset(leaderboardReset);
   initializer.registerRpc(rpcIdAwardCoins, rpcAwardCoins);
-  initializer.registerRpc(startTournament, rpcStartTournament);
-  initializer.registerRpc(endTournament, rpcEndTournament);
+  initializer.registerRpc(startArcadiaTournament, rpcStartArcadiaTournament);
+  initializer.registerRpc(endArcadiaTournament, rpcEndArcadiaTournament);
   logger.info('JavaScript logic loaded.');
 }
 !InitModule && InitModule.bind(null);

@@ -38,18 +38,17 @@ const getClientCredentials = (environmentalVariables: {[key: string]: string}, g
     return { clientId, clientSecret };
 }
 
-const generateAuth = (nk: nkruntime.Nakama, clientId: string, clientSecret: string, gameName: string, playerId: string, tournamentId: string): { hash: string, nonce: number } => {
-    // const secret = `${tournamentId}::${clientId}::${clientSecret}`.toLowerCase();
-    const nonce = new Date().getTime();
+const generateAuthToken = (nk: nkruntime.Nakama, clientId: string, clientSecret: string, gameName: string, playerId: string, tournamentId: string): string => {
+    const secret = `${tournamentId}::${clientId}::${clientSecret}`.toLowerCase();
 
-    // const hash = nk.rsaSha256Hash(JSON.stringify({
-    //     tournamentId,
-    //     playerId,
-    //     clientId,
-    //     nonce
-    // }), `private_key`);
+    const authToken = nk.jwtGenerate("HS256", secret, {
+        sub: playerId, // Subject (usually a user ID)
+        iat: Math.floor(Date.now() / 1000), // Issued at time
+        exp: Math.floor(Date.now() / 1000) + (3 * 60), // Expiration time (2 mins from now)
+        iss: 'nakama-server', // Issuer (optional)
+    });
 
-    return { hash: "dummy_hash", nonce };
+    return authToken;
 }
 
 export function rpcStartArcadiaTournament(ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkruntime.Nakama, payload: string): string {
@@ -90,7 +89,7 @@ export function rpcStartArcadiaTournament(ctx: nkruntime.Context, logger: nkrunt
 
         const { clientId, clientSecret } = getClientCredentials(environmentalVariables, gameName);
 
-        const { hash, nonce } = generateAuth(nk, clientId, clientSecret, gameName, playerId, tournamentId);
+        const authToken = generateAuthToken(nk, clientId, clientSecret, gameName, playerId, tournamentId);
 
         const apiUrl = `${baseUrl}/tournament-round/${tournamentId}/start`;
 
@@ -101,8 +100,7 @@ export function rpcStartArcadiaTournament(ctx: nkruntime.Context, logger: nkrunt
             },
             body: JSON.stringify({
                 playerId,
-                authToken: hash,
-                nonce,
+                authToken,
                 clientToken: token,
                 clientId,
                 walletAddress
@@ -171,7 +169,7 @@ export function rpcEndArcadiaTournament(ctx: nkruntime.Context, logger: nkruntim
 
         const { clientId, clientSecret } = getClientCredentials(environmentalVariables, gameName);
 
-        const { hash, nonce } = generateAuth(nk, clientId, clientSecret, gameName, playerId, tournamentId);
+        const authToken = generateAuthToken(nk, clientId, clientSecret, gameName, playerId, tournamentId);
 
         const apiUrl = `${baseUrl}/tournament-round/${tournamentId}/end`;
 
@@ -182,8 +180,7 @@ export function rpcEndArcadiaTournament(ctx: nkruntime.Context, logger: nkruntim
             },
             body: JSON.stringify({
                 playerId,
-                authToken: hash,
-                nonce,
+                authToken,
                 clientToken: token,
                 clientId,
                 score,
