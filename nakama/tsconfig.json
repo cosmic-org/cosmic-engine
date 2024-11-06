@@ -1,16 +1,23 @@
 {
-  "include": [
-    "ts/*.ts"
-  ],
   "compilerOptions": {
-    "target": "es5",
-    "typeRoots": [
-      "./node_modules"
-    ],
-    "outFile": "./build/index.js",
-    "strict": true,
+    "noImplicitReturns": true,
+    "moduleResolution": "node",
     "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true
-  }
+    "noUnusedLocals": true,
+    "removeComments": true,
+    "target": "es5",
+    "module": "ESNext",
+    "lib": ["ES2015"],
+    "strict": false,
+  },
+  "files": [
+    "./node_modules/nakama-runtime/index.d.ts",
+  ],
+  "include": [
+    "./ts/**/*",
+  ],
+  "exclude": [
+    "node_modules",
+    "build"
+  ]
 }

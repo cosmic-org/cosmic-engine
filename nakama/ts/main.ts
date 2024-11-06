@@ -12,10 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { rpcEndArcadiaTournament, rpcStartArcadiaTournament } from "./arcadia_tournaments";
+import { rpcReward } from "./daily_rewards";
+import { rpcHealthcheck } from "./healthcheck";
+import { matchInit, matchJoin, matchJoinAttempt, matchLeave, matchLoop, matchSignal, matchTerminate, moduleName } from "./match_handler";
+import { rpcFindMatch } from "./match_rpc";
+
 const rpcIdRewards = 'rewards_js';
 const rpcIdFindMatch = 'find_match_js';
 const rpcIdAwardCoins = 'awardCoins';
 const LEADERBOARD_ID = "radar";
+const startArcadiaTournament = "start_arcadia_tournament";
+const endArcadiaTournament = "end_arcadia_tournament";
 
 function createLeaderboard(nk: nkruntime.Nakama, id: string) {
     // let id = '4ec4f126-3f9d-11e7-84ef-b7c182b36521';
@@ -105,9 +113,7 @@ function sendTokens(receivingWallet: string, tokensClaimed: number, nk: nkruntim
 }
 
 function rpcAwardCoins(ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkruntime.Nakama, data: string): string {
-
     if (ctx.userId) {
-
         // get user wallet info
         const account: nkruntime.Account = nk.accountGetId(ctx.userId);
         const wallet: nkruntime.Wallet = account.wallet;
@@ -155,6 +161,12 @@ function InitModule(ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkrunt
     initializer.registerLeaderboardReset(leaderboardReset);
     initializer.registerRpc(rpcIdAwardCoins, rpcAwardCoins);
 
+    initializer.registerRpc(startArcadiaTournament, rpcStartArcadiaTournament);
+    initializer.registerRpc(endArcadiaTournament, rpcEndArcadiaTournament);
+
 
     logger.info('JavaScript logic loaded.');
 }
+
+// Reference InitModule to avoid it getting removed on build
+!InitModule && InitModule.bind(null);
