@@ -17,7 +17,7 @@
 import { aiUserId } from "../ai";
 import { msecToSec } from "../daily_rewards";
 import { aiPresence } from "./ai";
-import { Board, BoardInitialState, BoardItem, DoneMessage, GameMode, GamePlayState, MatchLabel, MoveMessage, OpCode, Position, State, UpdateMessage, maxEmptySec, tickRate } from "./game-state";
+import { Board, BoardInitialState, BoardItem, DoneMessage, GameMode, GamePlayState, MatchLabel, MoveMessage, OpCode, Position, StartMessage, State, UpdateMessage, maxEmptySec, tickRate } from "./game-state";
 
 export const moduleName = "othello_ts";
 
@@ -207,42 +207,44 @@ export const matchLoop: nkruntime.MatchLoopFunction<State> = function(ctx: nkrun
 
         // We can start a game! Set up the game state and assign the marks to each player.
         state.playing = true;
-        state.board = new Array(9);
-        state.marks = {};
-        let marks = [Mark.X, Mark.O];
+        state.board = BoardInitialState;
+        state.playerBoardItem = {};
         Object.keys(state.presences).forEach(userId => {
-            if(state.ai) {
+            if(state.label.mode === GameMode.PlayerVsAI) {
                 if(userId === aiUserId) {
-                    state.marks[userId] = Mark.O;
+                    state.playerBoardItem[userId].boardItem = BoardItem.WHITE;
                 } else {
-                    state.marks[userId] = Mark.X;
+                    state.playerBoardItem[userId].boardItem = BoardItem.BLACK;
                 }
             } else {
-                state.marks[userId] = marks.shift() ?? null;
+                throw Error('Unsupported mode, please check the mode selection');
             }
         });
-        state.mark = Mark.X;
-        state.winner = Mark.UNDEFINED;
-        state.winnerPositions = null;
-        state.deadlineRemainingTicks = calculateDeadlineTicks(state.label);
+        state.boardItemToPlay = BoardItem.BLACK;
+        state.winner = BoardItem.NONE;
+
+        // TODO: Config a static time for gameplay
+        state.deadlineRemainingTicks = 10;
         state.nextGameRemainingTicks = 0;
 
         // Notify the players a new game has started.
         let msg: StartMessage = {
             board: state.board,
-            marks: state.marks,
-            mark: state.mark,
-            deadline: t + Math.floor(state.deadlineRemainingTicks / tickRate),
+            playerBoardItem: state.playerBoardItem,
+            boardItemToPlay: state.boardItemToPlay,
+            deadline: currentTimeInSec + Math.floor(state.deadlineRemainingTicks / tickRate),
         }
+
         dispatcher.broadcastMessage(OpCode.START, JSON.stringify(msg));
 
         return { state };
     }
 
-    if(state.aiMessage !== null) {
-        messages.push(state.aiMessage);
-        state.aiMessage = null;
-    }
+    // TODO: AI stuff needs to be handled
+    // if(state.aiMessage !== null) {
+    //     messages.push(state.aiMessage);
+    //     state.aiMessage = null;
+    // }
 
     // There's a game in progres state. Check for input, update match state, and send messages to clientstate.
     for (const message of messages) {
@@ -295,7 +297,7 @@ export const matchLoop: nkruntime.MatchLoopFunction<State> = function(ctx: nkrun
 
                     if (winnerUserId && winnerUserId !== '') {
                         if (winnerUserId === "none") {
-                            state.winner = null;
+                            state.winner = BoardItem.NONE;
                         } else {
                             state.winner = state.playerBoardItem[winnerUserId].boardItem;
                         }
@@ -330,9 +332,9 @@ export const matchLoop: nkruntime.MatchLoopFunction<State> = function(ctx: nkrun
             
                 break;
             case OpCode.INVITE_AI:
-                if(state.label.mode === "player-vs-ai") {
+                if(state.label.mode === GameMode.PlayerVsAI) {
                     logger.error('AI player is already playing');
-                    continue
+                    continue;
                 }
 
                 let activePlayers: nkruntime.Presence[] = [];
@@ -353,13 +355,12 @@ export const matchLoop: nkruntime.MatchLoopFunction<State> = function(ctx: nkrun
                     continue
                 }
 
-                state.ai = true;
                 state.presences[aiUserId] = aiPresence;
 
-                if(state.marks[activePlayers[0].userId] == Mark.O) {
-                    state.marks[aiUserId] = Mark.X
+                if(state.playerBoardItem[activePlayers[0].userId].boardItem == BoardItem.BLACK) {
+                    state.playerBoardItem[aiUserId].boardItem = BoardItem.BLACK;
                 } else {
-                    state.marks[aiUserId] = Mark.O
+                    state.playerBoardItem[aiUserId].boardItem = BoardItem.WHITE;
                 }
 
                 logger.info('AI player joined match')
@@ -378,24 +379,32 @@ export const matchLoop: nkruntime.MatchLoopFunction<State> = function(ctx: nkrun
         if (state.deadlineRemainingTicks <= 0 ) {
             // The player has run out of time to submit their move.
             state.playing = false;
-            state.winner = state.mark === Mark.O ? Mark.X : Mark.O;
+            state.winner = state.boardItemToPlay === BoardItem.BLACK ? BoardItem.WHITE : BoardItem.BLACK;
+
+            // TODO: Config a static time for gameplay
             state.deadlineRemainingTicks = 0;
-            state.nextGameRemainingTicks = delaybetweenGamesSec * tickRate;
+            state.nextGameRemainingTicks = 10;
+
+            const { blackCount, whiteCount } = getBoardStats(state.board);
 
             let msg: DoneMessage = {
                 board: state.board,
+                playerBoardItem: state.playerBoardItem,
+                winnerGamePoints: Math.max(blackCount, whiteCount),
+                loserGamePoints: Math.min(blackCount, whiteCount),
                 winner: state.winner,
-                nextGameStart: t + Math.floor(state.nextGameRemainingTicks/tickRate),
-                winnerPositions: null,
+                nextGameStart: currentTimeInSec + Math.floor(state.nextGameRemainingTicks/tickRate),
             }
+
             dispatcher.broadcastMessage(OpCode.DONE, JSON.stringify(msg));
         }
     }
 
-    // The next turn is AI's
-    if(state.ai && state.mark === state.marks[aiUserId]) {
-        aiTurn(state, logger, nk);
-    }
+    // TODO: AI stuff needs to be handled
+    // // The next turn is AI's
+    // if(state.ai && state.mark === state.marks[aiUserId]) {
+    //     aiTurn(state, logger, nk);
+    // }
 
     return { state };
 }
