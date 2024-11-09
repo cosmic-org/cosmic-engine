@@ -268,66 +268,88 @@ export const matchLoop: nkruntime.MatchLoopFunction<State> = function(ctx: nkrun
                     continue;
                 }
 
-                // Othello board gameplay mechanis happens here and the board will be updated after validation
-                const isValidPlay = playMoveOnBoard(state.board, state.boardItemToPlay, msg.position);
+                // If player is attempting to skip, validate if there is no possible move and skip it.
+                if (msg.skipTurn) {
+                    const isValidSkip = checkIsValidSkip(state.board, state.boardItemToPlay);
 
-                if (!isValidPlay) {
-                    dispatcher.broadcastMessage(OpCode.REJECTED, null, [sender]);
-                    continue;
-                }
-                
-                // TODO: Config a static time for gameplay
-                state.deadlineRemainingTicks = 10;
-
-                const { blackCount, whiteCount, noneCount } = getBoardStats(state.board);
-
-                // The game is over when the board is filled
-                const isGameOver = noneCount === 0 && (blackCount + whiteCount) === 64;
-
-                let winnerUserId: string = null;
-
-                if (isGameOver) {
-                    if (whiteCount > blackCount) {
-                        winnerUserId = playerBoardItem.boardItem === BoardItem.WHITE ? message.sender.userId : aiUserId;
-                    } else if (blackCount > whiteCount) {
-                        winnerUserId = playerBoardItem.boardItem === BoardItem.BLACK ? message.sender.userId : aiUserId;
-                    } else {
-                        winnerUserId = 'none';
+                    if (!isValidSkip) {
+                        // It is not a valid skip, player must play this turn.
+                        dispatcher.broadcastMessage(OpCode.REJECTED, null, [sender]);
                     }
 
-                    if (winnerUserId && winnerUserId !== '') {
-                        if (winnerUserId === "none") {
-                            state.winner = BoardItem.NONE;
-                        } else {
-                            state.winner = state.playerBoardItem[winnerUserId].boardItem;
-                        }
-                        
-                        state.playing = false;
-                        state.deadlineRemainingTicks = 0;
-    
-                        // TODO: Config a static time for gameplay
-                        state.nextGameRemainingTicks = 10;
-                    }
+                    const aiBoardItem = state.playerBoardItem[aiUserId].boardItem;
+                    const playerBoardItem = aiBoardItem === BoardItem.BLACK ? BoardItem.WHITE : BoardItem.BLACK;
 
-                    let msg: DoneMessage = {
-                        board: state.board,
-                        playerBoardItem: state.playerBoardItem,
-                        winner: state.winner,
-                        winnerGamePoints: Math.max(blackCount, whiteCount),
-                        loserGamePoints: Math.min(blackCount, whiteCount),
-                        nextGameStart: currentTimeInSec + Math.floor(state.nextGameRemainingTicks/tickRate),
-                    }
-
-                    dispatcher.broadcastMessage(OpCode.DONE, JSON.stringify(msg));
-                } else {
                     let msg: UpdateMessage = {
                         board: state.board,
                         playerBoardItem: state.playerBoardItem,
-                        boardItemToPlay: state.boardItemToPlay,
+                        boardItemToPlay: sender.userId === aiUserId ? aiBoardItem : playerBoardItem,
                         deadline: currentTimeInSec + Math.floor(state.deadlineRemainingTicks/tickRate),
                     }
 
                     dispatcher.broadcastMessage(OpCode.UPDATE, JSON.stringify(msg));
+                } else {
+                    // Othello board gameplay mechanis happens here and the board will be updated after validation
+                    const isValidPlay = playMoveOnBoard(state, state.boardItemToPlay, msg.position);
+
+                    if (!isValidPlay) {
+                        dispatcher.broadcastMessage(OpCode.REJECTED, null, [sender]);
+                        continue;
+                    }
+                    
+                    // TODO: Config a static time for gameplay
+                    state.deadlineRemainingTicks = 10;
+
+                    const { blackCount, whiteCount, noneCount } = getBoardStats(state.board);
+
+                    // The game is over when the board is filled
+                    const isGameOver = noneCount === 0 && (blackCount + whiteCount) === 64;
+
+                    let winnerUserId: string = null;
+
+                    if (isGameOver) {
+                        if (whiteCount > blackCount) {
+                            winnerUserId = playerBoardItem.boardItem === BoardItem.WHITE ? message.sender.userId : aiUserId;
+                        } else if (blackCount > whiteCount) {
+                            winnerUserId = playerBoardItem.boardItem === BoardItem.BLACK ? message.sender.userId : aiUserId;
+                        } else {
+                            winnerUserId = 'none';
+                        }
+
+                        if (winnerUserId && winnerUserId !== '') {
+                            if (winnerUserId === "none") {
+                                state.winner = BoardItem.NONE;
+                            } else {
+                                state.winner = state.playerBoardItem[winnerUserId].boardItem;
+                            }
+                            
+                            state.playing = false;
+                            state.deadlineRemainingTicks = 0;
+        
+                            // TODO: Config a static time for gameplay
+                            state.nextGameRemainingTicks = 10;
+                        }
+
+                        let msg: DoneMessage = {
+                            board: state.board,
+                            playerBoardItem: state.playerBoardItem,
+                            winner: state.winner,
+                            winnerGamePoints: Math.max(blackCount, whiteCount),
+                            loserGamePoints: Math.min(blackCount, whiteCount),
+                            nextGameStart: currentTimeInSec + Math.floor(state.nextGameRemainingTicks/tickRate),
+                        }
+
+                        dispatcher.broadcastMessage(OpCode.DONE, JSON.stringify(msg));
+                    } else {
+                        let msg: UpdateMessage = {
+                            board: state.board,
+                            playerBoardItem: state.playerBoardItem,
+                            boardItemToPlay: state.boardItemToPlay,
+                            deadline: currentTimeInSec + Math.floor(state.deadlineRemainingTicks/tickRate),
+                        }
+
+                        dispatcher.broadcastMessage(OpCode.UPDATE, JSON.stringify(msg));
+                    }
                 }
             
                 break;
@@ -456,7 +478,7 @@ const directions = [
     { x: -1, y: 1 },  // up-right
 ];
 
-function isValidMove(board: Board, boardItemToPlay: BoardItem, position: Position): boolean {
+const isValidMove = (board: Board, boardItemToPlay: BoardItem, position: Position): boolean => {
     const [row, col] = position;
 
     // Client sent a position outside the board, so it is not a valid move
@@ -497,15 +519,31 @@ function isValidMove(board: Board, boardItemToPlay: BoardItem, position: Positio
     return false;
 }
 
-function playMoveOnBoard(board: Board, boardItemToPlay: BoardItem, position: Position) {
+const checkIsValidSkip = (board: Board, boardItemToPlay: BoardItem): boolean => {
+    for (let rowIndex = 0; rowIndex < board.length; rowIndex++) {
+        for (let colIndex = 0; colIndex < board[0]?.length; colIndex++) {
+            if (board[rowIndex][colIndex] === BoardItem.NONE) {
+                const isValid = isValidMove(board, boardItemToPlay, [rowIndex, colIndex]);
+
+                if (isValid) {
+                    return true;
+                }
+            }
+        }
+    }
+
+    return false;
+}
+
+const playMoveOnBoard = (state: State, boardItemToPlay: BoardItem, position: Position) => {
     const [row, col] = position;
 
-    if (!isValidMove(board, boardItemToPlay, position)) {
+    if (!isValidMove(state.board, boardItemToPlay, position)) {
         return false;
     }
 
     // Place the player item on the board that the user is selected
-    board[row][col] =boardItemToPlay;
+    state.board[row][col] = boardItemToPlay;
 
     for (const { x, y } of directions) {
         // Traversing all the directions
@@ -515,12 +553,12 @@ function playMoveOnBoard(board: Board, boardItemToPlay: BoardItem, position: Pos
 
         while (r >= 0 && r < 8 && c >= 0 && c < 8) {
              // if the immidiate nearest slot is none, then there is no possibility of flip, so no valid placement
-             if (board[r][c] === BoardItem.NONE) break;
+             if (state.board[r][c] === BoardItem.NONE) break;
 
-             if (board[r][c] === boardItemToPlay) {
+             if (state.board[r][c] === boardItemToPlay) {
                 // if the player's item found after atleast one instance of opponent item ? It is a valid placement
                 slotsToFlip.forEach(([posR, posC]) => {
-                    board[posR][posC] = boardItemToPlay;
+                    state.board[posR][posC] = boardItemToPlay;
                 });
                 break;
             }
@@ -534,7 +572,7 @@ function playMoveOnBoard(board: Board, boardItemToPlay: BoardItem, position: Pos
     return true;
 }
 
-function getBoardStats(board: Board): { blackCount: number, whiteCount: number, noneCount: number } {
+const getBoardStats = (board: Board): { blackCount: number, whiteCount: number, noneCount: number } => {
     let blackN = 0;
     let whiteN = 0;
     let noneN = 0;
