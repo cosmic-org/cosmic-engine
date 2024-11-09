@@ -68,6 +68,8 @@ export interface State {
     loserGamePoints: number;
     // Ticks until the next game starts, if applicable.
     nextGameRemainingTicks: number;
+    // A move message from AI player
+    aiMessage: nkruntime.MatchMessage | null
 }
 
 // Message data sent by server to clients representing a new game round starting.

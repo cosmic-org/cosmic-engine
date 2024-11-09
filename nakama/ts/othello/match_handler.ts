@@ -16,7 +16,7 @@
 
 import { aiUserId } from "../ai";
 import { msecToSec } from "../daily_rewards";
-import { aiPresence } from "./ai";
+import { aiPresence, getAISmartMove } from "./ai";
 import { Board, BoardInitialState, BoardItem, DoneMessage, GameMode, GamePlayState, MatchLabel, MoveMessage, OpCode, Position, StartMessage, State, UpdateMessage, maxEmptySec, tickRate } from "./game-state";
 
 export const moduleName = "othello_ts";
@@ -48,6 +48,7 @@ export const matchInit: nkruntime.MatchInitFunction<State> = function (ctx: nkru
         loserGamePoints: 0,
         winnerGamePoints: 0,
         nextGameRemainingTicks: 0,
+        aiMessage: null,
     }
 
     if(mode === GameMode.PlayerVsAI) {
@@ -240,11 +241,10 @@ export const matchLoop: nkruntime.MatchLoopFunction<State> = function(ctx: nkrun
         return { state };
     }
 
-    // TODO: AI stuff needs to be handled
-    // if(state.aiMessage !== null) {
-    //     messages.push(state.aiMessage);
-    //     state.aiMessage = null;
-    // }
+    if(state.aiMessage !== null) {
+        messages.push(state.aiMessage);
+        state.aiMessage = null;
+    }
 
     // There's a game in progres state. Check for input, update match state, and send messages to clientstate.
     for (const message of messages) {
@@ -400,11 +400,31 @@ export const matchLoop: nkruntime.MatchLoopFunction<State> = function(ctx: nkrun
         }
     }
 
-    // TODO: AI stuff needs to be handled
-    // // The next turn is AI's
-    // if(state.ai && state.mark === state.marks[aiUserId]) {
-    //     aiTurn(state, logger, nk);
-    // }
+    // The next turn is AI's
+    if(state.label.mode === GameMode.PlayerVsAI && state.boardItemToPlay === state.playerBoardItem[aiUserId].boardItem) {
+        (async () => {
+            const bestMovePosition = await getAISmartMove(ctx, nk, state.board);
+
+            const moveMessage: MoveMessage = {
+                position: bestMovePosition.position,
+                skipTurn: false,
+            }
+
+            const data = nk.stringToBinary(JSON.stringify(moveMessage));
+
+            const aiMessage: nkruntime.MatchMessage = {
+                sender: aiPresence,
+                persistence: true,
+                status: "",
+                opCode: OpCode.MOVE,
+                data: data,
+                reliable: true,
+                receiveTimeMs: Date.now(),
+            }; 
+
+            state.aiMessage = aiMessage;
+        })();
+    }
 
     return { state };
 }
