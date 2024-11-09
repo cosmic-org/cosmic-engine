@@ -214,8 +214,10 @@ export const matchLoop: nkruntime.MatchLoopFunction<State> = function(ctx: nkrun
             if(state.label.mode === GameMode.PlayerVsAI) {
                 if(userId === aiUserId) {
                     state.playerBoardItem[userId].boardItem = BoardItem.WHITE;
+                    state.playerBoardItem[userId].boardItemLeft = 30;
                 } else {
                     state.playerBoardItem[userId].boardItem = BoardItem.BLACK;
+                    state.playerBoardItem[userId].boardItemLeft = 30;
                 }
             } else {
                 throw Error('Unsupported mode, please check the mode selection');
