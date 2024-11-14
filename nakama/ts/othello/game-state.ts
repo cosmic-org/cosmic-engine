@@ -69,7 +69,7 @@ export interface State {
     // Ticks until the next game starts, if applicable.
     nextGameRemainingTicks: number;
     // A move message from AI player
-    aiMessage: nkruntime.MatchMessage | null
+    aiMessage: nkruntime.MatchMessage | null;
 }
 
 // Message data sent by server to clients representing a new game round starting.
@@ -123,7 +123,7 @@ export interface DoneMessage {
 export const boardItemCount = 8 * 8;
 export const maxEmptySec = 30;
 export const delaybetweenGamesSec = 5;
-export const tickRate = 5;
+export const tickRate = 1;
 
 export const BoardInitialState: BoardItem[][] = [
     [BoardItem.NONE, BoardItem.NONE, BoardItem.NONE, BoardItem.NONE, BoardItem.NONE, BoardItem.NONE, BoardItem.NONE, BoardItem.NONE],

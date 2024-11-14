@@ -16,10 +16,21 @@ import { rpcEndArcadiaTournament, rpcStartArcadiaTournament } from "./arcadia_to
 import { rpcReward } from "./daily_rewards";
 import { rpcHealthcheck } from "./healthcheck";
 import { matchInit, matchJoin, matchJoinAttempt, matchLeave, matchLoop, matchSignal, matchTerminate, moduleName } from "./match_handler";
+import { 
+    matchInit as othelloMatchInit, 
+    matchJoin as othelloMatchJoin, 
+    matchJoinAttempt as othelloMatchJoinAttempt, 
+    matchLoop as othelloMatchLoop,
+    matchLeave as othelloMatchLeave,  
+    matchSignal as othelloMatchSignal , 
+    matchTerminate as othelloMatchTerminate } from "./othello/match_handler";
 import { rpcFindMatch } from "./match_rpc";
+import { rpcFindMatch as othelloRpcFindMatch } from "./othello/match_rpc";
+import { moduleName as OthelloModuleName } from "./othello/match_handler"
 
 const rpcIdRewards = 'rewards_js';
 const rpcIdFindMatch = 'find_match_js';
+const othelloRpcIdFindMatch = 'othello_find_match_js';
 const rpcIdAwardCoins = 'awardCoins';
 const LEADERBOARD_ID = "radar";
 const startArcadiaTournament = "start_arcadia_tournament";
@@ -152,6 +163,18 @@ function InitModule(ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkrunt
         matchLoop,
         matchTerminate,
         matchSignal,
+    });
+
+    initializer.registerRpc(othelloRpcIdFindMatch, othelloRpcFindMatch);
+
+    initializer.registerMatch(OthelloModuleName, {
+        matchInit: othelloMatchInit,
+        matchJoinAttempt: othelloMatchJoinAttempt,
+        matchJoin: othelloMatchJoin,
+        matchLeave: othelloMatchLeave,
+        matchLoop: othelloMatchLoop,
+        matchTerminate: othelloMatchTerminate,
+        matchSignal: othelloMatchSignal,
     });
 
     createLeaderboard(nk, LEADERBOARD_ID);

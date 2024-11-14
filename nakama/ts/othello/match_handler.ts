@@ -21,8 +21,8 @@ import { Board, BoardInitialState, BoardItem, DoneMessage, GameMode, GamePlaySta
 
 export const moduleName = "othello_ts";
 
-export const matchInit: nkruntime.MatchInitFunction<State> = function (ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkruntime.Nakama, params: {[key: string]: any}) {
-    const mode: GameMode = params['mode'] as GameMode;
+export const matchInit: nkruntime.MatchInitFunction<State> = function (ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkruntime.Nakama, params: {[key: string]: string}) {
+    const mode: GameMode = GameMode.PlayerVsAI;
 
     // Only AI vs Player gameplay is supported now
     if (mode !== GameMode.PlayerVsAI) {
@@ -48,7 +48,7 @@ export const matchInit: nkruntime.MatchInitFunction<State> = function (ctx: nkru
         loserGamePoints: 0,
         winnerGamePoints: 0,
         nextGameRemainingTicks: 0,
-        aiMessage: null,
+        aiMessage: null
     }
 
     if(mode === GameMode.PlayerVsAI) {
@@ -63,39 +63,51 @@ export const matchInit: nkruntime.MatchInitFunction<State> = function (ctx: nkru
 }
 
 export const matchJoinAttempt: nkruntime.MatchJoinAttemptFunction<State> = function (ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkruntime.Nakama, dispatcher: nkruntime.MatchDispatcher, tick: number, state: State, presence: nkruntime.Presence, metadata: {[key: string]: any}) {
-    // Check if match is full.
-    if (connectedPlayers(state) + state.joinsInProgress >= 2) {
+    const connectedPlayerUserIds: string[] = getConnectedPlayerUserIds(state);
+    const totalPlayers: number = connectedPlayerUserIds.length + state.joinsInProgress;
+
+    const isPlayerAlreadyJoined = connectedPlayerUserIds.some((userId) => {
+        return userId === presence.userId;
+    });
+
+    // Check if player is already joined
+    if (isPlayerAlreadyJoined) {
         return {
             state: state,
             accept: false,
-            rejectMessage: 'match full',
+            rejectMessage: 'Player already joined',
         };
     }
-    
-    // Check if it's a user attempting to rejoin after a disconnect.
-    if (presence.userId in state.presences) {
-        if (!state.presences[presence.userId]) {
-            // User rejoining after a disconnect.
-            state.joinsInProgress++;
-            return {
-                state,
-                accept: true,
-            }
-        } else {
-            // User attempting to join from 2 different devices at the same time.
-            return {
-                state,
-                accept: false,
-                rejectMessage: 'already joined',
-            }
-        }
+
+    // Check if match is full.
+    if (totalPlayers >= 2) {
+        return {
+            state: state,
+            accept: false,
+            rejectMessage: 'Match full',
+        };
     }
 
-    // New player attempting to connect.
-    state.joinsInProgress++;
-    return {
-        state,
-        accept: true,
+    const isAIParticipated = connectedPlayerUserIds.some((userId) => {
+        return userId === aiUserId;
+    });
+
+    // If AI is joined and no one is available ? the player can join
+    if (isAIParticipated && totalPlayers === 1) {
+        // New player attempting to connect.
+        state.joinsInProgress++;
+
+        return {
+            state,
+            accept: true,
+        }
+    } else {
+        // If AI is not joined, there is something wrong happened
+        return {
+            state: state,
+            accept: false,
+            rejectMessage: 'Something went wrong',
+        };
     }
 }
 
@@ -118,20 +130,21 @@ export const matchJoin: nkruntime.MatchJoinFunction<State> = function(ctx: nkrun
             }
             // Send a message to the user that just joined.
             dispatcher.broadcastMessage(OpCode.UPDATE, JSON.stringify(update));
-        } else if (state.board.length !== 0 && Object.keys(state.playerBoardItem).length !== 0 && state.playerBoardItem[presence.userId]) {
-            // There's no game in progress but we still have a completed game that the user was part of.
-            // They likely disconnected before the game ended, and have since forfeited because they took too long to return.
-            let done: DoneMessage = {
-                board: state.board,
-                playerBoardItem: state.playerBoardItem,
-                winner: state.winner,
-                winnerGamePoints: state.winnerGamePoints,
-                loserGamePoints: state.loserGamePoints,
-                nextGameStart: currentTimeInSec + Math.floor(state.nextGameRemainingTicks/tickRate)
-            }
-            // Send a message to the user that just joined.
-            dispatcher.broadcastMessage(OpCode.DONE, JSON.stringify(done))
-        }
+        } 
+        // else if (state.board.length !== 0 && Object.keys(state.playerBoardItem).length !== 0 && state.playerBoardItem[presence.userId]) {
+        //     // There's no game in progress but we still have a completed game that the user was part of.
+        //     // They likely disconnected before the game ended, and have since forfeited because they took too long to return.
+        //     let done: DoneMessage = {
+        //         board: state.board,
+        //         playerBoardItem: state.playerBoardItem,
+        //         winner: state.winner,
+        //         winnerGamePoints: state.winnerGamePoints,
+        //         loserGamePoints: state.loserGamePoints,
+        //         nextGameStart: currentTimeInSec + Math.floor(state.nextGameRemainingTicks/tickRate)
+        //     }
+        //     // Send a message to the user that just joined.
+        //     dispatcher.broadcastMessage(OpCode.DONE, JSON.stringify(done))
+        // }
     }
 
     // Check if match was open to new players, but should now be closed.
@@ -149,27 +162,12 @@ export const matchLeave: nkruntime.MatchLeaveFunction<State> = function(ctx: nkr
         state.presences[presence.userId] = null;
     }
 
-    let humanPlayersRemaining: nkruntime.Presence[] = [];
-    Object.keys(state.presences).forEach((userId) => {
-        if(userId !== aiUserId && state.presences[userId] !== null) {
-            humanPlayersRemaining.push(state.presences[userId]!);
-        }
-    });
-
-    // Notify remaining player that the opponent has left the game
-    if (humanPlayersRemaining.length === 1) {
-        dispatcher.broadcastMessage(
-            OpCode.OPPONENT_LEFT, null, humanPlayersRemaining, null, true)
-    } else if(state.label.mode === GameMode.PlayerVsAI && humanPlayersRemaining.length === 0) {
-        state.presences[aiUserId] = null;
-    }
-
     return { state };
 }
 
 export const matchLoop: nkruntime.MatchLoopFunction<State> = function(ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkruntime.Nakama, dispatcher: nkruntime.MatchDispatcher, tick: number, state: State, messages: nkruntime.MatchMessage[]) {
     // Match has been empty for too long, close it.
-    if (connectedPlayers(state) + state.joinsInProgress === 0) {
+    if (getConnectedPlayerUserIds(state).length + state.joinsInProgress === 0) {
         state.emptyTicks++;
 
         if (state.emptyTicks >= maxEmptySec * tickRate) {
@@ -213,16 +211,21 @@ export const matchLoop: nkruntime.MatchLoopFunction<State> = function(ctx: nkrun
         Object.keys(state.presences).forEach(userId => {
             if(state.label.mode === GameMode.PlayerVsAI) {
                 if(userId === aiUserId) {
-                    state.playerBoardItem[userId].boardItem = BoardItem.WHITE;
-                    state.playerBoardItem[userId].boardItemLeft = 30;
+                    state.playerBoardItem[userId] = {
+                        boardItem: BoardItem.WHITE,
+                        boardItemLeft: 30
+                    };
                 } else {
-                    state.playerBoardItem[userId].boardItem = BoardItem.BLACK;
-                    state.playerBoardItem[userId].boardItemLeft = 30;
+                    state.playerBoardItem[userId] = {
+                        boardItem: BoardItem.BLACK,
+                        boardItemLeft: 30
+                    };
                 }
             } else {
                 throw Error('Unsupported mode, please check the mode selection');
             }
         });
+
         state.boardItemToPlay = BoardItem.BLACK;
         state.winner = BoardItem.NONE;
 
@@ -252,12 +255,14 @@ export const matchLoop: nkruntime.MatchLoopFunction<State> = function(ctx: nkrun
     for (const message of messages) {
         switch (message.opCode) {
             case OpCode.MOVE:
-                const sender = message.sender.userId !== aiUserId ? message.sender : null;
+                const sender = message.sender.userId !== aiUserId ? [message.sender] : null;
                 let playerBoardItem = state.playerBoardItem[message.sender.userId];
+
+                logger.info(`${sender === null ? "AI MOVE" : "PLAYER MOVE"}`);
 
                 if (state.boardItemToPlay != playerBoardItem.boardItem) {
                     // It is not this player's turn.
-                    dispatcher.broadcastMessage(OpCode.REJECTED, null, [sender]);
+                    dispatcher.broadcastMessage(OpCode.REJECTED, JSON.stringify({ message: "It is not your turn." }), sender);
                     continue;
                 }
 
@@ -266,7 +271,7 @@ export const matchLoop: nkruntime.MatchLoopFunction<State> = function(ctx: nkrun
                     msg = JSON.parse(nk.binaryToString(message.data));
                 } catch (error) {
                     // Client sent bad data.
-                    dispatcher.broadcastMessage(OpCode.REJECTED, null, [sender]);
+                    dispatcher.broadcastMessage(OpCode.REJECTED, JSON.stringify({ message: "Something went wrong" }), sender);
                     continue;
                 }
 
@@ -276,16 +281,17 @@ export const matchLoop: nkruntime.MatchLoopFunction<State> = function(ctx: nkrun
 
                     if (!isValidSkip) {
                         // It is not a valid skip, player must play this turn.
-                        dispatcher.broadcastMessage(OpCode.REJECTED, null, [sender]);
+                        dispatcher.broadcastMessage(OpCode.REJECTED, JSON.stringify({ message: "You cannot skip a turn when there is a valid move" }), sender);
                     }
 
                     const aiBoardItem = state.playerBoardItem[aiUserId].boardItem;
                     const playerBoardItem = aiBoardItem === BoardItem.BLACK ? BoardItem.WHITE : BoardItem.BLACK;
+                    state.boardItemToPlay = sender === null ? playerBoardItem : aiBoardItem;
 
                     let msg: UpdateMessage = {
                         board: state.board,
                         playerBoardItem: state.playerBoardItem,
-                        boardItemToPlay: sender.userId === aiUserId ? aiBoardItem : playerBoardItem,
+                        boardItemToPlay: state.boardItemToPlay,
                         deadline: currentTimeInSec + Math.floor(state.deadlineRemainingTicks/tickRate),
                     }
 
@@ -295,10 +301,10 @@ export const matchLoop: nkruntime.MatchLoopFunction<State> = function(ctx: nkrun
                     const isValidPlay = playMoveOnBoard(state, state.boardItemToPlay, msg.position);
 
                     if (!isValidPlay) {
-                        dispatcher.broadcastMessage(OpCode.REJECTED, null, [sender]);
+                        dispatcher.broadcastMessage(OpCode.REJECTED, JSON.stringify({ message: "Invalid move" }), sender);
                         continue;
                     }
-                    
+
                     // TODO: Config a static time for gameplay
                     state.deadlineRemainingTicks = 10;
 
@@ -311,9 +317,9 @@ export const matchLoop: nkruntime.MatchLoopFunction<State> = function(ctx: nkrun
 
                     if (isGameOver) {
                         if (whiteCount > blackCount) {
-                            winnerUserId = playerBoardItem.boardItem === BoardItem.WHITE ? message.sender.userId : aiUserId;
+                            winnerUserId = aiUserId;
                         } else if (blackCount > whiteCount) {
-                            winnerUserId = playerBoardItem.boardItem === BoardItem.BLACK ? message.sender.userId : aiUserId;
+                            winnerUserId = message.sender.userId;
                         } else {
                             winnerUserId = 'none';
                         }
@@ -343,112 +349,93 @@ export const matchLoop: nkruntime.MatchLoopFunction<State> = function(ctx: nkrun
 
                         dispatcher.broadcastMessage(OpCode.DONE, JSON.stringify(msg));
                     } else {
+                        const aiBoardItem = state.playerBoardItem[aiUserId].boardItem;
+                        const playerBoardItem = aiBoardItem === BoardItem.BLACK ? BoardItem.WHITE : BoardItem.BLACK;
+                        state.boardItemToPlay = sender === null ? playerBoardItem : aiBoardItem;
                         let msg: UpdateMessage = {
                             board: state.board,
                             playerBoardItem: state.playerBoardItem,
                             boardItemToPlay: state.boardItemToPlay,
                             deadline: currentTimeInSec + Math.floor(state.deadlineRemainingTicks/tickRate),
                         }
-
                         dispatcher.broadcastMessage(OpCode.UPDATE, JSON.stringify(msg));
                     }
                 }
             
                 break;
-            case OpCode.INVITE_AI:
-                if(state.label.mode === GameMode.PlayerVsAI) {
-                    logger.error('AI player is already playing');
-                    continue;
-                }
-
-                let activePlayers: nkruntime.Presence[] = [];
-
-                Object.keys(state.presences).forEach((userId) => {
-                    let p = state.presences[userId];
-                    if(p === null) {
-                        delete state.presences[userId];
-                    } else {
-                        activePlayers.push(p);
-                    }
-                });
-
-                logger.debug('active users: %d', activePlayers.length);
-
-                if(activePlayers.length != 1) {
-                    logger.error('one active player is required to enable AI mode')
-                    continue
-                }
-
-                state.presences[aiUserId] = aiPresence;
-
-                if(state.playerBoardItem[activePlayers[0].userId].boardItem == BoardItem.BLACK) {
-                    state.playerBoardItem[aiUserId].boardItem = BoardItem.BLACK;
-                } else {
-                    state.playerBoardItem[aiUserId].boardItem = BoardItem.WHITE;
-                }
-
-                logger.info('AI player joined match')
-                break;
-
             default:
                 // No other opcodes are expected from the client, so automatically treat it as an error.
-                dispatcher.broadcastMessage(OpCode.REJECTED, null, [message.sender]);
+                dispatcher.broadcastMessage(OpCode.REJECTED, JSON.stringify({ message: "Unexpected action, something went wrong" }), [message.sender]);
                 logger.error('Unexpected opcode received: %d', message.opCode);
         }
     }
 
-    // Keep track of the time remaining for the player to submit their move. Idle players forfeit.
-    if (state.playing) {
-        state.deadlineRemainingTicks--;
-        if (state.deadlineRemainingTicks <= 0 ) {
-            // The player has run out of time to submit their move.
-            state.playing = false;
-            state.winner = state.boardItemToPlay === BoardItem.BLACK ? BoardItem.WHITE : BoardItem.BLACK;
+    // // Keep track of the time remaining for the player to submit their move. Idle players forfeit.
+    // if (state.playing) {
+    //     state.deadlineRemainingTicks--;
+    //     if (state.deadlineRemainingTicks <= 0 ) {
+    //         // The player has run out of time to submit their move.
+    //         state.playing = false;
+    //         state.winner = state.boardItemToPlay === BoardItem.BLACK ? BoardItem.WHITE : BoardItem.BLACK;
 
-            // TODO: Config a static time for gameplay
-            state.deadlineRemainingTicks = 0;
-            state.nextGameRemainingTicks = 10;
+    //         // TODO: Config a static time for gameplay
+    //         state.deadlineRemainingTicks = 0;
+    //         state.nextGameRemainingTicks = 10;
 
-            const { blackCount, whiteCount } = getBoardStats(state.board);
+    //         const { blackCount, whiteCount } = getBoardStats(state.board);
 
-            let msg: DoneMessage = {
-                board: state.board,
-                playerBoardItem: state.playerBoardItem,
-                winnerGamePoints: Math.max(blackCount, whiteCount),
-                loserGamePoints: Math.min(blackCount, whiteCount),
-                winner: state.winner,
-                nextGameStart: currentTimeInSec + Math.floor(state.nextGameRemainingTicks/tickRate),
-            }
+    //         let msg: DoneMessage = {
+    //             board: state.board,
+    //             playerBoardItem: state.playerBoardItem,
+    //             winnerGamePoints: Math.max(blackCount, whiteCount),
+    //             loserGamePoints: Math.min(blackCount, whiteCount),
+    //             winner: state.winner,
+    //             nextGameStart: currentTimeInSec + Math.floor(state.nextGameRemainingTicks/tickRate),
+    //         }
 
-            dispatcher.broadcastMessage(OpCode.DONE, JSON.stringify(msg));
-        }
-    }
+    //         dispatcher.broadcastMessage(OpCode.DONE, JSON.stringify(msg));
+    //     }
+    // }
 
     // The next turn is AI's
     if(state.label.mode === GameMode.PlayerVsAI && state.boardItemToPlay === state.playerBoardItem[aiUserId].boardItem) {
         (async () => {
-            const bestMovePosition = await getAISmartMove(ctx, nk, state.board);
+            try {
+                const bestMovePosition = await getAISmartMove(ctx, logger, nk, state.board);
 
-            const moveMessage: MoveMessage = {
-                position: bestMovePosition.position,
-                skipTurn: false,
+                const moveMessage: MoveMessage = {
+                    position: bestMovePosition.position,
+                    skipTurn: false,
+                }
+
+                const data = nk.stringToBinary(JSON.stringify(moveMessage));
+
+                const aiMessage: nkruntime.MatchMessage = {
+                    sender: aiPresence,
+                    persistence: true,
+                    status: "",
+                    opCode: OpCode.MOVE,
+                    data: data,
+                    reliable: true,
+                    receiveTimeMs: Date.now(),
+                }; 
+
+                state.aiMessage = aiMessage;
+            } catch (error) {
+                logger.debug(JSON.stringify(error));
+                dispatcher.broadcastMessage(OpCode.REJECTED, JSON.stringify({ message: "AI move failed!" }), [null]);
             }
-
-            const data = nk.stringToBinary(JSON.stringify(moveMessage));
-
-            const aiMessage: nkruntime.MatchMessage = {
-                sender: aiPresence,
-                persistence: true,
-                status: "",
-                opCode: OpCode.MOVE,
-                data: data,
-                reliable: true,
-                receiveTimeMs: Date.now(),
-            }; 
-
-            state.aiMessage = aiMessage;
         })();
     }
+
+    let update: UpdateMessage = {
+        board: state.board,
+        playerBoardItem: state.playerBoardItem,
+        boardItemToPlay: state.boardItemToPlay,
+        deadline: 1 + Math.floor(state.deadlineRemainingTicks/tickRate),
+    }
+    // Send a message to the user that just joined.
+    dispatcher.broadcastMessage(OpCode.UPDATE, JSON.stringify(update));
 
     return { state };
 }
@@ -461,12 +448,12 @@ export const matchSignal: nkruntime.MatchSignalFunction<State> = function(ctx: n
     return { state };
 }
 
-function connectedPlayers(state: State): number {
-    let count = 0;
+function getConnectedPlayerUserIds(state: State): string[] {
+    const userIds: string[] = [];
     for(const userId of Object.keys(state.presences)) {
-        if (state.presences[userId]) count++;
+        userIds.push(userId);
     }
-    return count;
+    return userIds;
 }
 
 const directions = [

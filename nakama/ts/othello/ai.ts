@@ -9,15 +9,19 @@ export const aiPresence: nkruntime.Presence = {
 	node: "",
 }
 
-const convertAIResponseIntoBestMove = (boardOutput: number[]): { position: Position } => {
+const convertAIResponseIntoBestMove = (logger: nkruntime.Logger, boardOutput: number[]): { position: Position } => {
 	let row: number = -1;
 	let col: number = -1;
 
 	let minBestMoveScore: number = 100;
 
 	boardOutput.forEach((bestMoveScore, index) => {
-		if (bestMoveScore < minBestMoveScore) {
-			minBestMoveScore = bestMoveScore;
+		const score = bestMoveScore < 0 ? bestMoveScore * -1 : bestMoveScore;
+
+		logger.info(`SMARTMOVE SCORE::: ${score} ROW:: ${Math.floor(index / 8)} COL:: ${index % 8}`);
+
+		if (score < minBestMoveScore) {
+			minBestMoveScore = score;
 			row = Math.floor(index / 8);
 			col = index % 8;
 		}
@@ -73,56 +77,60 @@ const createAIApiSession = async (ctx: nkruntime.Context, nk: nkruntime.Nakama):
 	}
 }
 
-export const getAISmartMove = async (ctx: nkruntime.Context, nk: nkruntime.Nakama, board: Board): Promise<{ position: Position }> => {
-	const isAISessionUp = await createAIApiSession(ctx, nk);
+export const getAISmartMove = async (ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkruntime.Nakama, board: Board): Promise<{ position: Position }> => {
+	try {
+		const isAISessionUp = await createAIApiSession(ctx, nk);
+
+		if (!isAISessionUp) {
+			throw new Error("AI session not created");
+		}
 	
-	if (!isAISessionUp) {
-		throw new Error("AI session not created");
-	}
+		const environmentalVariables = ctx.env;
+		const baseUrl = environmentalVariables["OTHELLO_AI_API_BASE_URL"];
+	
+		const boardIn: number[] = [];
 
-	const environmentalVariables = ctx.env;
-	const baseUrl = environmentalVariables["OTHELLO_AI_API_BASE_URL"];
-
-	const boardIn: number[] = [];
-
-	board.forEach((row) => {
-		row.forEach((column) => {
-			let item: number = 0.0;
-			switch(column) {
-				case BoardItem.BLACK:
-					item = 1.0;
-					break;
-				case BoardItem.WHITE:
-					item = -1.0;
-					break;
-				default:
-					break;
-			}
-
-			boardIn.push(item);
+		board.forEach((row) => {
+			row.forEach((column) => {
+				let item: number = 0.0;
+				switch(column) {
+					case BoardItem.BLACK:
+						item = -1.0;
+						break;
+					case BoardItem.WHITE:
+						item = 1.0;
+						break;
+					default:
+						break;
+				}
+	
+				boardIn.push(item);
+			});
 		});
-	});
 
-	const options = {
-		headers: {
-			"Content-Type": "application/json",
-			"Accept": "application/json",
-		},
-		body: JSON.stringify({
-			"board_in": boardIn
-		})
-	};
+		const options = {
+			headers: {
+				"Content-Type": "application/json",
+				"Accept": "application/json",
+			},
+			body: JSON.stringify({
+				"board_in": boardIn
+			})
+		};
+	
+		const apiUrl = `${baseUrl}/api/sessions/othello/v1`;
 
-	const apiUrl = `${baseUrl}/api/sessions/othello/v1`;
+		const boardOutput = await nk.httpRequest(
+			apiUrl,
+			"post",
+			options.headers,
+			options.body
+		);
 
-	const boardOutput = await nk.httpRequest(
-		apiUrl,
-		"post",
-		options.headers,
-		options.body
-	);
-
-	let parsedBoardOutput = JSON.parse(boardOutput.body) as { "best_move": number[][] };
-
-	return convertAIResponseIntoBestMove(parsedBoardOutput.best_move[0]);
+		let parsedBoardOutput = JSON.parse(boardOutput.body) as { "best_move": number[][] };
+		return convertAIResponseIntoBestMove(logger, parsedBoardOutput.best_move[0]);
+	} catch(error) {
+		logger.error(error);
+		return { position: [0,0] };
+	}
 }
