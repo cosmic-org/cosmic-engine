@@ -424,7 +424,7 @@ var Mark;
   Mark[Mark["X"] = 1] = "X";
   Mark[Mark["O"] = 2] = "O";
 })(Mark || (Mark = {}));
-var OpCode;
+var OpCode$1;
 (function (OpCode) {
   OpCode[OpCode["START"] = 1] = "START";
   OpCode[OpCode["UPDATE"] = 2] = "UPDATE";
@@ -433,19 +433,19 @@ var OpCode;
   OpCode[OpCode["REJECTED"] = 5] = "REJECTED";
   OpCode[OpCode["OPPONENT_LEFT"] = 6] = "OPPONENT_LEFT";
   OpCode[OpCode["INVITE_AI"] = 7] = "INVITE_AI";
-})(OpCode || (OpCode = {}));
+})(OpCode$1 || (OpCode$1 = {}));
 
-var aiUserId = "ai-user-id";
+var aiUserId$1 = "ai-user-id";
 var tfServingAddress = "http://tf:8501/v1/models/ttt:predict";
-var aiPresence = {
-  userId: aiUserId,
+var aiPresence$1 = {
+  userId: aiUserId$1,
   sessionId: "",
-  username: aiUserId,
+  username: aiUserId$1,
   node: ""
 };
 function aiMessage(code, data) {
   return {
-    sender: aiPresence,
+    sender: aiPresence$1,
     persistence: true,
     status: "",
     opCode: code,
@@ -462,7 +462,7 @@ function aiTurn(state, logger, nk) {
   state.board.forEach(function (mark, idx) {
     var rowIdx = Math.floor(idx / 3);
     var cellIdx = idx % 3;
-    if (mark === state.marks[aiUserId]) b[rowIdx][cellIdx] = aiCell;else if (mark === null || mark === Mark.UNDEFINED) b[rowIdx][cellIdx] = undefCell;else b[rowIdx][cellIdx] = playerCell;
+    if (mark === state.marks[aiUserId$1]) b[rowIdx][cellIdx] = aiCell;else if (mark === null || mark === Mark.UNDEFINED) b[rowIdx][cellIdx] = undefCell;else b[rowIdx][cellIdx] = playerCell;
   });
   var headers = {
     'Accept': 'application/json'
@@ -490,18 +490,18 @@ function aiTurn(state, logger, nk) {
     var move = nk.stringToBinary(JSON.stringify({
       position: aiMovePos
     }));
-    state.aiMessage = aiMessage(OpCode.MOVE, move);
+    state.aiMessage = aiMessage(OpCode$1.MOVE, move);
   }
 }
 
-var moduleName = "tic-tac-toe_js";
-var tickRate = 5;
-var maxEmptySec = 30;
+var moduleName$1 = "tic-tac-toe_js";
+var tickRate$1 = 5;
+var maxEmptySec$1 = 30;
 var delaybetweenGamesSec = 5;
 var turnTimeFastSec = 10;
 var turnTimeNormalSec = 20;
 var winningPositions = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]];
-var matchInit = function matchInit(ctx, logger, nk, params) {
+var matchInit$1 = function matchInit(ctx, logger, nk, params) {
   var fast = !!params['fast'];
   var ai = !!params['ai'];
   var label = {
@@ -528,15 +528,15 @@ var matchInit = function matchInit(ctx, logger, nk, params) {
     aiMessage: null
   };
   if (ai) {
-    state.presences[aiUserId] = aiPresence;
+    state.presences[aiUserId$1] = aiPresence$1;
   }
   return {
     state: state,
-    tickRate: tickRate,
+    tickRate: tickRate$1,
     label: JSON.stringify(label)
   };
 };
-var matchJoinAttempt = function matchJoinAttempt(ctx, logger, nk, dispatcher, tick, state, presence, metadata) {
+var matchJoinAttempt$1 = function matchJoinAttempt(ctx, logger, nk, dispatcher, tick, state, presence, metadata) {
   if (presence.userId in state.presences) {
     if (state.presences[presence.userId] === null) {
       state.joinsInProgress++;
@@ -565,7 +565,7 @@ var matchJoinAttempt = function matchJoinAttempt(ctx, logger, nk, dispatcher, ti
     accept: true
   };
 };
-var matchJoin = function matchJoin(ctx, logger, nk, dispatcher, tick, state, presences) {
+var matchJoin$1 = function matchJoin(ctx, logger, nk, dispatcher, tick, state, presences) {
   var t = msecToSec(Date.now());
   for (var _i = 0, presences_1 = presences; _i < presences_1.length; _i++) {
     var presence = presences_1[_i];
@@ -576,18 +576,18 @@ var matchJoin = function matchJoin(ctx, logger, nk, dispatcher, tick, state, pre
       var update = {
         board: state.board,
         mark: state.mark,
-        deadline: t + Math.floor(state.deadlineRemainingTicks / tickRate)
+        deadline: t + Math.floor(state.deadlineRemainingTicks / tickRate$1)
       };
-      dispatcher.broadcastMessage(OpCode.UPDATE, JSON.stringify(update));
+      dispatcher.broadcastMessage(OpCode$1.UPDATE, JSON.stringify(update));
     } else if (state.board.length !== 0 && Object.keys(state.marks).length !== 0 && state.marks[presence.userId]) {
       logger.debug('player %s rejoined game', presence.userId);
       var done = {
         board: state.board,
         winner: state.winner,
         winnerPositions: state.winnerPositions,
-        nextGameStart: t + Math.floor(state.nextGameRemainingTicks / tickRate)
+        nextGameStart: t + Math.floor(state.nextGameRemainingTicks / tickRate$1)
       };
-      dispatcher.broadcastMessage(OpCode.DONE, JSON.stringify(done));
+      dispatcher.broadcastMessage(OpCode$1.DONE, JSON.stringify(done));
     }
   }
   if (Object.keys(state.presences).length >= 2 && state.label.open != 0) {
@@ -599,7 +599,7 @@ var matchJoin = function matchJoin(ctx, logger, nk, dispatcher, tick, state, pre
     state: state
   };
 };
-var matchLeave = function matchLeave(ctx, logger, nk, dispatcher, tick, state, presences) {
+var matchLeave$1 = function matchLeave(ctx, logger, nk, dispatcher, tick, state, presences) {
   for (var _i = 0, presences_2 = presences; _i < presences_2.length; _i++) {
     var presence = presences_2[_i];
     logger.info("Player: %s left match: %s.", presence.userId, ctx.matchId);
@@ -607,23 +607,23 @@ var matchLeave = function matchLeave(ctx, logger, nk, dispatcher, tick, state, p
   }
   var humanPlayersRemaining = [];
   Object.keys(state.presences).forEach(function (userId) {
-    if (userId !== aiUserId && state.presences[userId] !== null) humanPlayersRemaining.push(state.presences[userId]);
+    if (userId !== aiUserId$1 && state.presences[userId] !== null) humanPlayersRemaining.push(state.presences[userId]);
   });
   if (humanPlayersRemaining.length === 1) {
-    dispatcher.broadcastMessage(OpCode.OPPONENT_LEFT, null, humanPlayersRemaining, null, true);
+    dispatcher.broadcastMessage(OpCode$1.OPPONENT_LEFT, null, humanPlayersRemaining, null, true);
   } else if (state.ai && humanPlayersRemaining.length === 0) {
-    delete state.presences[aiUserId];
+    delete state.presences[aiUserId$1];
     state.ai = false;
   }
   return {
     state: state
   };
 };
-var matchLoop = function matchLoop(ctx, logger, nk, dispatcher, tick, state, messages) {
+var matchLoop$1 = function matchLoop(ctx, logger, nk, dispatcher, tick, state, messages) {
   var _a;
   if (connectedPlayers(state) + state.joinsInProgress === 0) {
     state.emptyTicks++;
-    if (state.emptyTicks >= maxEmptySec * tickRate) {
+    if (state.emptyTicks >= maxEmptySec$1 * tickRate$1) {
       logger.info('closing idle match');
       return null;
     }
@@ -658,7 +658,7 @@ var matchLoop = function matchLoop(ctx, logger, nk, dispatcher, tick, state, mes
     Object.keys(state.presences).forEach(function (userId) {
       var _a;
       if (state.ai) {
-        if (userId === aiUserId) {
+        if (userId === aiUserId$1) {
           state.marks[userId] = Mark.O;
         } else {
           state.marks[userId] = Mark.X;
@@ -676,9 +676,9 @@ var matchLoop = function matchLoop(ctx, logger, nk, dispatcher, tick, state, mes
       board: state.board,
       marks: state.marks,
       mark: state.mark,
-      deadline: t + Math.floor(state.deadlineRemainingTicks / tickRate)
+      deadline: t + Math.floor(state.deadlineRemainingTicks / tickRate$1)
     };
-    dispatcher.broadcastMessage(OpCode.START, JSON.stringify(msg));
+    dispatcher.broadcastMessage(OpCode$1.START, JSON.stringify(msg));
     return {
       state: state
     };
@@ -689,24 +689,24 @@ var matchLoop = function matchLoop(ctx, logger, nk, dispatcher, tick, state, mes
   }
   var _loop_1 = function _loop_1(message) {
     switch (message.opCode) {
-      case OpCode.MOVE:
+      case OpCode$1.MOVE:
         logger.debug('Received move message from user: %v', state.marks);
         var mark = (_a = state.marks[message.sender.userId]) !== null && _a !== void 0 ? _a : null;
-        var sender = message.sender.userId == aiUserId ? null : [message.sender];
+        var sender = message.sender.userId == aiUserId$1 ? null : [message.sender];
         if (mark === null || state.mark != mark) {
-          dispatcher.broadcastMessage(OpCode.REJECTED, null, sender);
+          dispatcher.broadcastMessage(OpCode$1.REJECTED, null, sender);
           return "continue";
         }
         var msg = {};
         try {
           msg = JSON.parse(nk.binaryToString(message.data));
         } catch (error) {
-          dispatcher.broadcastMessage(OpCode.REJECTED, null, sender);
+          dispatcher.broadcastMessage(OpCode$1.REJECTED, null, sender);
           logger.debug('Bad data received: %v', error);
           return "continue";
         }
         if (state.board[msg.position]) {
-          dispatcher.broadcastMessage(OpCode.REJECTED, null, sender);
+          dispatcher.broadcastMessage(OpCode$1.REJECTED, null, sender);
           return "continue";
         }
         state.board[msg.position] = mark;
@@ -720,7 +720,7 @@ var matchLoop = function matchLoop(ctx, logger, nk, dispatcher, tick, state, mes
           state.winnerPositions = winningPos;
           state.playing = false;
           state.deadlineRemainingTicks = 0;
-          state.nextGameRemainingTicks = delaybetweenGamesSec * tickRate;
+          state.nextGameRemainingTicks = delaybetweenGamesSec * tickRate$1;
         }
         var tie = state.board.every(function (v) {
           return v !== null;
@@ -728,25 +728,25 @@ var matchLoop = function matchLoop(ctx, logger, nk, dispatcher, tick, state, mes
         if (tie) {
           state.playing = false;
           state.deadlineRemainingTicks = 0;
-          state.nextGameRemainingTicks = delaybetweenGamesSec * tickRate;
+          state.nextGameRemainingTicks = delaybetweenGamesSec * tickRate$1;
         }
         var opCode = void 0;
         var outgoingMsg = void 0;
         if (state.playing) {
-          opCode = OpCode.UPDATE;
+          opCode = OpCode$1.UPDATE;
           var msg_1 = {
             board: state.board,
             mark: state.mark,
-            deadline: t + Math.floor(state.deadlineRemainingTicks / tickRate)
+            deadline: t + Math.floor(state.deadlineRemainingTicks / tickRate$1)
           };
           outgoingMsg = msg_1;
         } else {
-          opCode = OpCode.DONE;
+          opCode = OpCode$1.DONE;
           var msg_2 = {
             board: state.board,
             winner: state.winner,
             winnerPositions: state.winnerPositions,
-            nextGameStart: t + Math.floor(state.nextGameRemainingTicks / tickRate)
+            nextGameStart: t + Math.floor(state.nextGameRemainingTicks / tickRate$1)
           };
           outgoingMsg = msg_2;
           var walletUpdates = [];
@@ -781,7 +781,7 @@ var matchLoop = function matchLoop(ctx, logger, nk, dispatcher, tick, state, mes
         }
         dispatcher.broadcastMessage(opCode, JSON.stringify(outgoingMsg));
         break;
-      case OpCode.INVITE_AI:
+      case OpCode$1.INVITE_AI:
         if (state.ai) {
           logger.error('AI player is already playing');
           return "continue";
@@ -801,16 +801,16 @@ var matchLoop = function matchLoop(ctx, logger, nk, dispatcher, tick, state, mes
           return "continue";
         }
         state.ai = true;
-        state.presences[aiUserId] = aiPresence;
+        state.presences[aiUserId$1] = aiPresence$1;
         if (state.marks[activePlayers_1[0].userId] == Mark.O) {
-          state.marks[aiUserId] = Mark.X;
+          state.marks[aiUserId$1] = Mark.X;
         } else {
-          state.marks[aiUserId] = Mark.O;
+          state.marks[aiUserId$1] = Mark.O;
         }
         logger.info('AI player joined match');
         break;
       default:
-        dispatcher.broadcastMessage(OpCode.REJECTED, null, [message.sender]);
+        dispatcher.broadcastMessage(OpCode$1.REJECTED, null, [message.sender]);
         logger.error('Unexpected opcode received: %d', message.opCode);
     }
   };
@@ -824,38 +824,38 @@ var matchLoop = function matchLoop(ctx, logger, nk, dispatcher, tick, state, mes
       state.playing = false;
       state.winner = state.mark === Mark.O ? Mark.X : Mark.O;
       state.deadlineRemainingTicks = 0;
-      state.nextGameRemainingTicks = delaybetweenGamesSec * tickRate;
+      state.nextGameRemainingTicks = delaybetweenGamesSec * tickRate$1;
       var msg = {
         board: state.board,
         winner: state.winner,
-        nextGameStart: t + Math.floor(state.nextGameRemainingTicks / tickRate),
+        nextGameStart: t + Math.floor(state.nextGameRemainingTicks / tickRate$1),
         winnerPositions: null
       };
-      dispatcher.broadcastMessage(OpCode.DONE, JSON.stringify(msg));
+      dispatcher.broadcastMessage(OpCode$1.DONE, JSON.stringify(msg));
     }
   }
-  if (state.ai && state.mark === state.marks[aiUserId]) {
+  if (state.ai && state.mark === state.marks[aiUserId$1]) {
     aiTurn(state, logger, nk);
   }
   return {
     state: state
   };
 };
-var matchTerminate = function matchTerminate(ctx, logger, nk, dispatcher, tick, state, graceSeconds) {
+var matchTerminate$1 = function matchTerminate(ctx, logger, nk, dispatcher, tick, state, graceSeconds) {
   return {
     state: state
   };
 };
-var matchSignal = function matchSignal(ctx, logger, nk, dispatcher, tick, state) {
+var matchSignal$1 = function matchSignal(ctx, logger, nk, dispatcher, tick, state) {
   return {
     state: state
   };
 };
 function calculateDeadlineTicks(l) {
   if (l.fast === 1) {
-    return turnTimeFastSec * tickRate;
+    return turnTimeFastSec * tickRate$1;
   } else {
-    return turnTimeNormalSec * tickRate;
+    return turnTimeNormalSec * tickRate$1;
   }
 }
 function winCheck(board, mark) {
@@ -878,7 +878,652 @@ function connectedPlayers(s) {
   return count;
 }
 
-var rpcFindMatch = function rpcFindMatch(ctx, logger, nk, payload) {
+var GamePlayState;
+(function (GamePlayState) {
+  GamePlayState[GamePlayState["CLOSE"] = 0] = "CLOSE";
+  GamePlayState[GamePlayState["OPEN"] = 1] = "OPEN";
+})(GamePlayState || (GamePlayState = {}));
+var GameMode;
+(function (GameMode) {
+  GameMode[GameMode["PlayerVsPlayer"] = 0] = "PlayerVsPlayer";
+  GameMode[GameMode["PlayerVsAI"] = 1] = "PlayerVsAI";
+})(GameMode || (GameMode = {}));
+var BoardItem;
+(function (BoardItem) {
+  BoardItem[BoardItem["WHITE"] = 0] = "WHITE";
+  BoardItem[BoardItem["BLACK"] = 1] = "BLACK";
+  BoardItem[BoardItem["NONE"] = 2] = "NONE";
+})(BoardItem || (BoardItem = {}));
+var OpCode;
+(function (OpCode) {
+  OpCode[OpCode["START"] = 1] = "START";
+  OpCode[OpCode["UPDATE"] = 2] = "UPDATE";
+  OpCode[OpCode["DONE"] = 3] = "DONE";
+  OpCode[OpCode["MOVE"] = 4] = "MOVE";
+  OpCode[OpCode["REJECTED"] = 5] = "REJECTED";
+  OpCode[OpCode["OPPONENT_LEFT"] = 6] = "OPPONENT_LEFT";
+  OpCode[OpCode["INVITE_AI"] = 7] = "INVITE_AI";
+})(OpCode || (OpCode = {}));
+var maxEmptySec = 30;
+var tickRate = 1;
+var BoardInitialState = [[BoardItem.NONE, BoardItem.NONE, BoardItem.NONE, BoardItem.NONE, BoardItem.NONE, BoardItem.NONE, BoardItem.NONE, BoardItem.NONE], [BoardItem.NONE, BoardItem.NONE, BoardItem.NONE, BoardItem.NONE, BoardItem.NONE, BoardItem.NONE, BoardItem.NONE, BoardItem.NONE], [BoardItem.NONE, BoardItem.NONE, BoardItem.NONE, BoardItem.NONE, BoardItem.NONE, BoardItem.NONE, BoardItem.NONE, BoardItem.NONE], [BoardItem.NONE, BoardItem.NONE, BoardItem.NONE, BoardItem.WHITE, BoardItem.BLACK, BoardItem.NONE, BoardItem.NONE, BoardItem.NONE], [BoardItem.NONE, BoardItem.NONE, BoardItem.NONE, BoardItem.BLACK, BoardItem.WHITE, BoardItem.NONE, BoardItem.NONE, BoardItem.NONE], [BoardItem.NONE, BoardItem.NONE, BoardItem.NONE, BoardItem.NONE, BoardItem.NONE, BoardItem.NONE, BoardItem.NONE, BoardItem.NONE], [BoardItem.NONE, BoardItem.NONE, BoardItem.NONE, BoardItem.NONE, BoardItem.NONE, BoardItem.NONE, BoardItem.NONE, BoardItem.NONE], [BoardItem.NONE, BoardItem.NONE, BoardItem.NONE, BoardItem.NONE, BoardItem.NONE, BoardItem.NONE, BoardItem.NONE, BoardItem.NONE]];
+
+var aiUserId = "ai-user-id";
+var aiPresence = {
+  userId: aiUserId,
+  sessionId: "",
+  username: aiUserId,
+  node: ""
+};
+var convertAIResponseIntoBestMove = function convertAIResponseIntoBestMove(logger, boardOutput) {
+  var row = -1;
+  var col = -1;
+  var minBestMoveScore = 100;
+  logger.debug("\n\n");
+  logger.debug("\n\n");
+  logger.debug("==================================================================");
+  logger.debug("==================================================================");
+  logger.debug("==================================================================");
+  logger.debug("\n\n");
+  logger.debug("\n\n");
+  boardOutput.forEach(function (bestMoveScore, index) {
+    var score = bestMoveScore < 0 ? bestMoveScore * -1 : bestMoveScore;
+    logger.info("SMARTMOVE SCORE::: ".concat(score, " ROW:: ").concat(Math.floor(index / 8), " COL:: ").concat(index % 8));
+    if (score < minBestMoveScore) {
+      minBestMoveScore = score;
+      row = Math.floor(index / 8);
+      col = index % 8;
+    }
+  });
+  logger.debug("\n\n");
+  logger.debug("\n\n");
+  logger.debug("==================================================================");
+  logger.debug("==================================================================");
+  logger.debug("==================================================================");
+  logger.debug("\n\n");
+  logger.debug("\n\n");
+  if (minBestMoveScore > 10.0) {
+    throw new Error("There are no best moves given by AI");
+  }
+  if (row < 0 || row >= 8 || col < 0 || col >= 8) {
+    throw new Error("AI provided a move outside the board");
+  }
+  return {
+    position: [row, col]
+  };
+};
+var createAIApiSession = function createAIApiSession(ctx, nk) {
+  return __awaiter(void 0, void 0, void 0, function () {
+    var environmentalVariables, baseUrl, options, apiUrl, error_1;
+    return __generator(this, function (_a) {
+      switch (_a.label) {
+        case 0:
+          _a.trys.push([0, 2,, 3]);
+          environmentalVariables = ctx.env;
+          baseUrl = environmentalVariables["OTHELLO_AI_API_BASE_URL"];
+          options = {
+            headers: {
+              "Content-Type": "application/json",
+              "Accept": "application/json"
+            },
+            body: JSON.stringify({
+              "model": "othello",
+              "version": "v1",
+              "option": {
+                "cuda": false
+              }
+            })
+          };
+          apiUrl = "".concat(baseUrl, "/api/sessions");
+          return [4, nk.httpRequest(apiUrl, "post", options.headers, options.body)];
+        case 1:
+          _a.sent();
+          return [2, true];
+        case 2:
+          error_1 = _a.sent();
+          if (error_1.error === "session already exists") {
+            return [2, true];
+          }
+          return [2, false];
+        case 3:
+          return [2];
+      }
+    });
+  });
+};
+var getAISmartMove = function getAISmartMove(ctx, logger, nk, board) {
+  return __awaiter(void 0, void 0, void 0, function () {
+    var isAISessionUp, environmentalVariables, baseUrl, boardIn_1, options, apiUrl, boardOutput, parsedBoardOutput, error_2;
+    return __generator(this, function (_a) {
+      switch (_a.label) {
+        case 0:
+          _a.trys.push([0, 3,, 4]);
+          return [4, createAIApiSession(ctx, nk)];
+        case 1:
+          isAISessionUp = _a.sent();
+          if (!isAISessionUp) {
+            throw new Error("AI session not created");
+          }
+          environmentalVariables = ctx.env;
+          baseUrl = environmentalVariables["OTHELLO_AI_API_BASE_URL"];
+          boardIn_1 = [];
+          board.forEach(function (row) {
+            row.forEach(function (column) {
+              var item = 0.0;
+              switch (column) {
+                case BoardItem.BLACK:
+                  item = -1.0;
+                  break;
+                case BoardItem.WHITE:
+                  item = 1.0;
+                  break;
+              }
+              boardIn_1.push(item);
+            });
+          });
+          options = {
+            headers: {
+              "Content-Type": "application/json",
+              "Accept": "application/json"
+            },
+            body: JSON.stringify({
+              "board_in": boardIn_1
+            })
+          };
+          apiUrl = "".concat(baseUrl, "/api/sessions/othello/v1");
+          return [4, nk.httpRequest(apiUrl, "post", options.headers, options.body)];
+        case 2:
+          boardOutput = _a.sent();
+          parsedBoardOutput = JSON.parse(boardOutput.body);
+          return [2, convertAIResponseIntoBestMove(logger, parsedBoardOutput.best_move[0])];
+        case 3:
+          error_2 = _a.sent();
+          logger.error(error_2);
+          return [2, {
+            position: [0, 0]
+          }];
+        case 4:
+          return [2];
+      }
+    });
+  });
+};
+
+var moduleName = "othello_ts";
+var matchInit = function matchInit(ctx, logger, nk, params) {
+  var mode = GameMode.PlayerVsAI;
+  if (mode !== GameMode.PlayerVsAI) {
+    throw Error('Unsupported mode, please check the mode selection');
+  }
+  var label = {
+    open: GamePlayState.OPEN,
+    mode: mode
+  };
+  var state = {
+    label: label,
+    emptyTicks: 0,
+    presences: {},
+    joinsInProgress: 0,
+    playing: false,
+    board: BoardInitialState,
+    boardItemToPlay: BoardItem.BLACK,
+    playerBoardItem: {},
+    deadlineRemainingTicks: 0,
+    winner: BoardItem.NONE,
+    loserGamePoints: 0,
+    winnerGamePoints: 0,
+    nextGameRemainingTicks: 0,
+    aiMessage: null
+  };
+  if (mode === GameMode.PlayerVsAI) {
+    state.presences[aiUserId$1] = aiPresence;
+  }
+  return {
+    state: state,
+    tickRate: tickRate,
+    label: JSON.stringify(label)
+  };
+};
+var matchJoinAttempt = function matchJoinAttempt(ctx, logger, nk, dispatcher, tick, state, presence, metadata) {
+  var connectedPlayerUserIds = getConnectedPlayerUserIds(state);
+  var totalPlayers = connectedPlayerUserIds.length + state.joinsInProgress;
+  var isPlayerAlreadyJoined = connectedPlayerUserIds.some(function (userId) {
+    return userId === presence.userId;
+  });
+  if (isPlayerAlreadyJoined) {
+    return {
+      state: state,
+      accept: false,
+      rejectMessage: 'Player already joined'
+    };
+  }
+  if (totalPlayers >= 2) {
+    return {
+      state: state,
+      accept: false,
+      rejectMessage: 'Match full'
+    };
+  }
+  var isAIParticipated = connectedPlayerUserIds.some(function (userId) {
+    return userId === aiUserId$1;
+  });
+  if (isAIParticipated && totalPlayers === 1) {
+    state.joinsInProgress++;
+    return {
+      state: state,
+      accept: true
+    };
+  } else {
+    return {
+      state: state,
+      accept: false,
+      rejectMessage: 'Something went wrong'
+    };
+  }
+};
+var matchJoin = function matchJoin(ctx, logger, nk, dispatcher, tick, state, presences) {
+  var currentTimeInSec = msecToSec(Date.now());
+  for (var _i = 0, presences_1 = presences; _i < presences_1.length; _i++) {
+    var presence = presences_1[_i];
+    state.emptyTicks = 0;
+    state.presences[presence.userId] = presence;
+    state.joinsInProgress--;
+    if (state.playing) {
+      var update = {
+        board: state.board,
+        playerBoardItem: state.playerBoardItem,
+        boardItemToPlay: state.boardItemToPlay,
+        deadline: currentTimeInSec + Math.floor(state.deadlineRemainingTicks / tickRate)
+      };
+      dispatcher.broadcastMessage(OpCode.UPDATE, JSON.stringify(update));
+    }
+  }
+  if (Object.keys(state.presences).length >= 2 && state.label.open != 0) {
+    state.label.open = 0;
+    var labelJSON = JSON.stringify(state.label);
+    dispatcher.matchLabelUpdate(labelJSON);
+  }
+  return {
+    state: state
+  };
+};
+var matchLeave = function matchLeave(ctx, logger, nk, dispatcher, tick, state, presences) {
+  for (var _i = 0, presences_2 = presences; _i < presences_2.length; _i++) {
+    var presence = presences_2[_i];
+    state.presences[presence.userId] = null;
+  }
+  return {
+    state: state
+  };
+};
+var matchLoop = function matchLoop(ctx, logger, nk, dispatcher, tick, state, messages) {
+  var _this = this;
+  if (getConnectedPlayerUserIds(state).length + state.joinsInProgress === 0) {
+    state.emptyTicks++;
+    if (state.emptyTicks >= maxEmptySec * tickRate) {
+      return null;
+    }
+  }
+  var currentTimeInSec = msecToSec(Date.now());
+  if (!state.playing) {
+    for (var userID in state.presences) {
+      if (state.presences[userID] === null) {
+        delete state.presences[userID];
+      }
+    }
+    if (Object.keys(state.presences).length < 2 && state.label.open != 1) {
+      state.label.open = 1;
+      var labelJSON = JSON.stringify(state.label);
+      dispatcher.matchLabelUpdate(labelJSON);
+    }
+    if (Object.keys(state.presences).length < 2) {
+      return {
+        state: state
+      };
+    }
+    if (state.nextGameRemainingTicks > 0) {
+      state.nextGameRemainingTicks--;
+      return {
+        state: state
+      };
+    }
+    state.playing = true;
+    state.board = BoardInitialState;
+    state.playerBoardItem = {};
+    Object.keys(state.presences).forEach(function (userId) {
+      if (state.label.mode === GameMode.PlayerVsAI) {
+        if (userId === aiUserId$1) {
+          state.playerBoardItem[userId] = {
+            boardItem: BoardItem.WHITE,
+            boardItemLeft: 30
+          };
+        } else {
+          state.playerBoardItem[userId] = {
+            boardItem: BoardItem.BLACK,
+            boardItemLeft: 30
+          };
+        }
+      } else {
+        throw Error('Unsupported mode, please check the mode selection');
+      }
+    });
+    state.boardItemToPlay = BoardItem.BLACK;
+    state.winner = BoardItem.NONE;
+    state.deadlineRemainingTicks = 10;
+    state.nextGameRemainingTicks = 0;
+    var msg = {
+      board: state.board,
+      playerBoardItem: state.playerBoardItem,
+      boardItemToPlay: state.boardItemToPlay,
+      deadline: currentTimeInSec + Math.floor(state.deadlineRemainingTicks / tickRate)
+    };
+    dispatcher.broadcastMessage(OpCode.START, JSON.stringify(msg));
+    return {
+      state: state
+    };
+  }
+  if (state.aiMessage !== null) {
+    messages.push(state.aiMessage);
+    state.aiMessage = null;
+  }
+  for (var _i = 0, messages_1 = messages; _i < messages_1.length; _i++) {
+    var message = messages_1[_i];
+    switch (message.opCode) {
+      case OpCode.MOVE:
+        var sender = message.sender.userId !== aiUserId$1 ? [message.sender] : null;
+        var playerBoardItem = state.playerBoardItem[message.sender.userId];
+        logger.info("".concat(sender === null ? "AI MOVE" : "PLAYER MOVE"));
+        if (state.boardItemToPlay != playerBoardItem.boardItem) {
+          dispatcher.broadcastMessage(OpCode.REJECTED, JSON.stringify({
+            message: "It is not your turn."
+          }), sender);
+          continue;
+        }
+        var msg = {};
+        try {
+          msg = JSON.parse(nk.binaryToString(message.data));
+        } catch (error) {
+          dispatcher.broadcastMessage(OpCode.REJECTED, JSON.stringify({
+            message: "Something went wrong"
+          }), sender);
+          continue;
+        }
+        if (msg.skipTurn) {
+          var isValidSkip = checkIsValidSkip(state.board, state.boardItemToPlay);
+          if (!isValidSkip) {
+            dispatcher.broadcastMessage(OpCode.REJECTED, JSON.stringify({
+              message: "You cannot skip a turn when there is a valid move"
+            }), sender);
+          }
+          var aiBoardItem = state.playerBoardItem[aiUserId$1].boardItem;
+          var playerBoardItem_1 = aiBoardItem === BoardItem.BLACK ? BoardItem.WHITE : BoardItem.BLACK;
+          state.boardItemToPlay = sender === null ? playerBoardItem_1 : aiBoardItem;
+          var msg_1 = {
+            board: state.board,
+            playerBoardItem: state.playerBoardItem,
+            boardItemToPlay: state.boardItemToPlay,
+            deadline: currentTimeInSec + Math.floor(state.deadlineRemainingTicks / tickRate)
+          };
+          dispatcher.broadcastMessage(OpCode.UPDATE, JSON.stringify(msg_1));
+        } else {
+          var isValidPlay = playMoveOnBoard(state, state.boardItemToPlay, msg.position);
+          if (!isValidPlay) {
+            dispatcher.broadcastMessage(OpCode.REJECTED, JSON.stringify({
+              message: "Invalid move"
+            }), sender);
+            continue;
+          }
+          state.deadlineRemainingTicks = 10;
+          var _a = getBoardStats(state.board),
+            blackCount = _a.blackCount,
+            whiteCount = _a.whiteCount,
+            noneCount = _a.noneCount;
+          var isGameOver = noneCount === 0 && blackCount + whiteCount === 64;
+          var winnerUserId = null;
+          if (isGameOver) {
+            if (whiteCount > blackCount) {
+              winnerUserId = aiUserId$1;
+            } else if (blackCount > whiteCount) {
+              winnerUserId = message.sender.userId;
+            } else {
+              winnerUserId = 'none';
+            }
+            if (winnerUserId && winnerUserId !== '') {
+              if (winnerUserId === "none") {
+                state.winner = BoardItem.NONE;
+              } else {
+                state.winner = state.playerBoardItem[winnerUserId].boardItem;
+              }
+              state.playing = false;
+              state.deadlineRemainingTicks = 0;
+              state.nextGameRemainingTicks = 10;
+            }
+            var msg_2 = {
+              board: state.board,
+              playerBoardItem: state.playerBoardItem,
+              winner: state.winner,
+              winnerGamePoints: Math.max(blackCount, whiteCount),
+              loserGamePoints: Math.min(blackCount, whiteCount),
+              nextGameStart: currentTimeInSec + Math.floor(state.nextGameRemainingTicks / tickRate)
+            };
+            dispatcher.broadcastMessage(OpCode.DONE, JSON.stringify(msg_2));
+          } else {
+            var aiBoardItem = state.playerBoardItem[aiUserId$1].boardItem;
+            var playerBoardItem_2 = aiBoardItem === BoardItem.BLACK ? BoardItem.WHITE : BoardItem.BLACK;
+            state.boardItemToPlay = sender === null ? playerBoardItem_2 : aiBoardItem;
+            var msg_3 = {
+              board: state.board,
+              playerBoardItem: state.playerBoardItem,
+              boardItemToPlay: state.boardItemToPlay,
+              deadline: currentTimeInSec + Math.floor(state.deadlineRemainingTicks / tickRate)
+            };
+            dispatcher.broadcastMessage(OpCode.UPDATE, JSON.stringify(msg_3));
+          }
+        }
+        break;
+      default:
+        dispatcher.broadcastMessage(OpCode.REJECTED, JSON.stringify({
+          message: "Unexpected action, something went wrong"
+        }), [message.sender]);
+        logger.error('Unexpected opcode received: %d', message.opCode);
+    }
+  }
+  if (state.label.mode === GameMode.PlayerVsAI && state.boardItemToPlay === state.playerBoardItem[aiUserId$1].boardItem) {
+    (function () {
+      return __awaiter(_this, void 0, void 0, function () {
+        var bestMovePosition, moveMessage, data, aiMessage, error_1;
+        return __generator(this, function (_a) {
+          switch (_a.label) {
+            case 0:
+              _a.trys.push([0, 2,, 3]);
+              return [4, getAISmartMove(ctx, logger, nk, state.board)];
+            case 1:
+              bestMovePosition = _a.sent();
+              moveMessage = {
+                position: bestMovePosition.position,
+                skipTurn: false
+              };
+              data = nk.stringToBinary(JSON.stringify(moveMessage));
+              aiMessage = {
+                sender: aiPresence,
+                persistence: true,
+                status: "",
+                opCode: OpCode.MOVE,
+                data: data,
+                reliable: true,
+                receiveTimeMs: Date.now()
+              };
+              state.aiMessage = aiMessage;
+              return [3, 3];
+            case 2:
+              error_1 = _a.sent();
+              logger.debug(JSON.stringify(error_1));
+              dispatcher.broadcastMessage(OpCode.REJECTED, JSON.stringify({
+                message: "AI move failed!"
+              }), [null]);
+              return [3, 3];
+            case 3:
+              return [2];
+          }
+        });
+      });
+    })();
+  }
+  var update = {
+    board: state.board,
+    playerBoardItem: state.playerBoardItem,
+    boardItemToPlay: state.boardItemToPlay,
+    deadline: 1 + Math.floor(state.deadlineRemainingTicks / tickRate)
+  };
+  dispatcher.broadcastMessage(OpCode.UPDATE, JSON.stringify(update));
+  return {
+    state: state
+  };
+};
+var matchTerminate = function matchTerminate(ctx, logger, nk, dispatcher, tick, state, graceSeconds) {
+  return {
+    state: state
+  };
+};
+var matchSignal = function matchSignal(ctx, logger, nk, dispatcher, tick, state) {
+  return {
+    state: state
+  };
+};
+function getConnectedPlayerUserIds(state) {
+  var userIds = [];
+  for (var _i = 0, _a = Object.keys(state.presences); _i < _a.length; _i++) {
+    var userId = _a[_i];
+    userIds.push(userId);
+  }
+  return userIds;
+}
+var directions = [{
+  x: 1,
+  y: 0
+}, {
+  x: -1,
+  y: 0
+}, {
+  x: 0,
+  y: 1
+}, {
+  x: 0,
+  y: -1
+}, {
+  x: 1,
+  y: 1
+}, {
+  x: -1,
+  y: -1
+}, {
+  x: 1,
+  y: -1
+}, {
+  x: -1,
+  y: 1
+}];
+var isValidMove = function isValidMove(board, boardItemToPlay, position) {
+  var row = position[0],
+    col = position[1];
+  if (row < 0 || row > 7 || col < 0 || col > 7) {
+    return false;
+  }
+  if (board[row][col] !== BoardItem.NONE) {
+    return false;
+  }
+  for (var _i = 0, directions_1 = directions; _i < directions_1.length; _i++) {
+    var _a = directions_1[_i],
+      x = _a.x,
+      y = _a.y;
+    var r = row + x;
+    var c = col + y;
+    var opponentBoardItemFound = false;
+    while (r >= 0 && r < 8 && c >= 0 && c < 8) {
+      if (board[r][c] === BoardItem.NONE) break;
+      if (board[r][c] === boardItemToPlay) {
+        if (opponentBoardItemFound) return true;
+        break;
+      }
+      opponentBoardItemFound = true;
+      r += x;
+      c += y;
+    }
+  }
+  return false;
+};
+var checkIsValidSkip = function checkIsValidSkip(board, boardItemToPlay) {
+  var _a;
+  for (var rowIndex = 0; rowIndex < board.length; rowIndex++) {
+    for (var colIndex = 0; colIndex < ((_a = board[0]) === null || _a === void 0 ? void 0 : _a.length); colIndex++) {
+      if (board[rowIndex][colIndex] === BoardItem.NONE) {
+        var isValid = isValidMove(board, boardItemToPlay, [rowIndex, colIndex]);
+        if (isValid) {
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+};
+var playMoveOnBoard = function playMoveOnBoard(state, boardItemToPlay, position) {
+  var row = position[0],
+    col = position[1];
+  if (!isValidMove(state.board, boardItemToPlay, position)) {
+    return false;
+  }
+  state.board[row][col] = boardItemToPlay;
+  for (var _i = 0, directions_2 = directions; _i < directions_2.length; _i++) {
+    var _a = directions_2[_i],
+      x = _a.x,
+      y = _a.y;
+    var r = row + x;
+    var c = col + y;
+    var slotsToFlip = [];
+    while (r >= 0 && r < 8 && c >= 0 && c < 8) {
+      if (state.board[r][c] === BoardItem.NONE) break;
+      if (state.board[r][c] === boardItemToPlay) {
+        slotsToFlip.forEach(function (_a) {
+          var posR = _a[0],
+            posC = _a[1];
+          state.board[posR][posC] = boardItemToPlay;
+        });
+        break;
+      }
+      slotsToFlip.push([r, c]);
+      r += x;
+      c += y;
+    }
+  }
+  return true;
+};
+var getBoardStats = function getBoardStats(board) {
+  var blackN = 0;
+  var whiteN = 0;
+  var noneN = 0;
+  board.forEach(function (row) {
+    row.forEach(function (column) {
+      switch (column) {
+        case BoardItem.BLACK:
+          blackN++;
+          break;
+        case BoardItem.WHITE:
+          whiteN++;
+          break;
+        case BoardItem.NONE:
+          noneN++;
+          break;
+      }
+    });
+  });
+  return {
+    blackCount: blackN,
+    whiteCount: whiteN,
+    noneCount: noneN
+  };
+};
+
+var rpcFindMatch$1 = function rpcFindMatch(ctx, logger, nk, payload) {
   if (!ctx.userId) {
     throw Error('No user ID in context');
   }
@@ -893,7 +1538,7 @@ var rpcFindMatch = function rpcFindMatch(ctx, logger, nk, payload) {
     throw error;
   }
   if (request.ai) {
-    var matchId = nk.matchCreate(moduleName, {
+    var matchId = nk.matchCreate(moduleName$1, {
       fast: request.fast,
       ai: true
     });
@@ -917,7 +1562,7 @@ var rpcFindMatch = function rpcFindMatch(ctx, logger, nk, payload) {
     });
   } else {
     try {
-      matchIds.push(nk.matchCreate(moduleName, {
+      matchIds.push(nk.matchCreate(moduleName$1, {
         fast: request.fast
       }));
     } catch (error) {
@@ -931,8 +1576,55 @@ var rpcFindMatch = function rpcFindMatch(ctx, logger, nk, payload) {
   return JSON.stringify(res);
 };
 
+var rpcFindMatch = function rpcFindMatch(ctx, logger, nk, payload) {
+  try {
+    if (!ctx.userId) {
+      throw Error('User Id not found');
+    }
+    if (!payload) {
+      throw Error('Invalid payload');
+    }
+    var request = JSON.parse(payload);
+    var matches = void 0;
+    var query = "+label.open:1 +label.mode:".concat(request.mode === GameMode.PlayerVsAI ? 1 : 0);
+    matches = nk.matchList(10, true, null, 1, 1, query);
+    var matchIds = [];
+    if (matches.length > 0) {
+      matchIds = matches.map(function (m) {
+        return m.matchId;
+      });
+    } else {
+      if (request.mode === GameMode.PlayerVsAI) {
+        var matchId = nk.matchCreate(moduleName, {
+          ai: true
+        });
+        var res_1 = {
+          matchIds: [matchId]
+        };
+        return JSON.stringify(res_1);
+      } else if (request.mode === GameMode.PlayerVsPlayer) {
+        throw Error('Player vs Player mode is not supported now');
+      } else {
+        throw Error('Unsupported mode, please check the mode selection');
+      }
+    }
+    var res = {
+      matchIds: matchIds
+    };
+    return JSON.stringify(res);
+  } catch (e) {
+    logger.error(JSON.stringify({
+      file: "nakama/ts/othello/match_rpc.ts",
+      methodName: "rpcFindMatch",
+      message: e.message || JSON.stringify(e.message)
+    }));
+    throw e;
+  }
+};
+
 var rpcIdRewards = 'rewards_js';
 var rpcIdFindMatch = 'find_match_js';
+var othelloRpcIdFindMatch = 'othello_find_match_js';
 var rpcIdAwardCoins = 'awardCoins';
 var LEADERBOARD_ID = "radar";
 var startArcadiaTournament = "start_arcadia_tournament";
@@ -1025,7 +1717,17 @@ function rpcAwardCoins(ctx, logger, nk, data) {
 }
 function InitModule(ctx, logger, nk, initializer) {
   initializer.registerRpc(rpcIdRewards, rpcReward);
-  initializer.registerRpc(rpcIdFindMatch, rpcFindMatch);
+  initializer.registerRpc(rpcIdFindMatch, rpcFindMatch$1);
+  initializer.registerMatch(moduleName$1, {
+    matchInit: matchInit$1,
+    matchJoinAttempt: matchJoinAttempt$1,
+    matchJoin: matchJoin$1,
+    matchLeave: matchLeave$1,
+    matchLoop: matchLoop$1,
+    matchTerminate: matchTerminate$1,
+    matchSignal: matchSignal$1
+  });
+  initializer.registerRpc(othelloRpcIdFindMatch, rpcFindMatch);
   initializer.registerMatch(moduleName, {
     matchInit: matchInit,
     matchJoinAttempt: matchJoinAttempt,
